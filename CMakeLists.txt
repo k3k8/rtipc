@@ -35,7 +35,7 @@
 
 
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
-PROJECT (etherlab)
+PROJECT (rtipc)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 SET (MAJOR_VERSION 0)
@@ -56,7 +56,7 @@ SET (PREFIX "${PREFIX}" CACHE PATH
     "Root directory for the project" FORCE)
 
 # Search for mercurial, used to add ID information to the library
-# LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 # FIND_PACKAGE (Mercurial)
 # IF (MERCURIAL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.hg")
 # MERCURIAL_HG_INFO (${PROJECT_SOURCE_DIR} Package)
@@ -64,6 +64,7 @@ SET (PREFIX "${PREFIX}" CACHE PATH
 
 ADD_SUBDIRECTORY (rtw)
 ADD_SUBDIRECTORY (src)
+ADD_SUBDIRECTORY (test)
 
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "IPC for real time applications")
