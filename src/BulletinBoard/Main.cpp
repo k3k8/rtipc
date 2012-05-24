@@ -75,7 +75,7 @@ void Main::load (const std::string& file)
 
             Config::Node::Group sigSpec = *it;
             newSignal(g, sigSpec["Name"], DataType(sigSpec["DataType"]),
-                    sigSpec["Length"]);
+                    static_cast<unsigned int>(sigSpec["Length"]));
         }
     }
 }
