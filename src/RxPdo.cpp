@@ -22,22 +22,16 @@
  *****************************************************************************/
 
 #include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
 
-#ifdef RTIPC_DEBUG
+#include "RxPdo.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
+using namespace RtIPC;
+
+//////////////////////////////////////////////////////////////////////////////
+RxPdo::RxPdo (const std::string& name,
+        const BB::DataType& datatype, size_t n,
+        void *addr, unsigned char *connected):
+    Signal(group, name, datatype, n), addr(addr), connected(connected)
 {
-    va_list ap;
-    va_start(ap, fmt);
-
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-
-    va_end(ap);
+    *connected = 0;
 }
-
-#endif //RTIPC_DEBUG

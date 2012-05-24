@@ -21,56 +21,197 @@
  *
  *****************************************************************************/
 
-//#include "config.h"
+#include "config.h"
 
 #include "Debug.h"
 #include "include/rtipc.h"
 
+#include "Main.h"
+#include "Group.h"
+#include "BulletinBoard/Signal.h"
+#include "BulletinBoard/Config.h"
+#include "RxPdo.h"
+#include "BulletinBoard/Main.h"
+#include <unistd.h>
+#include <stdexcept>
+#include <cstring>
+#include <iostream>
+#include <cerrno>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+namespace BB = BulletinBoard;
+
+using namespace RtIPC;
+
 //////////////////////////////////////////////////////////////////////////////
-struct rtipc* rtipc_create( const char *name, const char *cache_dir)
+struct rtipc* rtipc_create (const char *name, const char *cache_dir)
 {
-    return NULL;
+    return (struct rtipc*) new RtIPC::Main (name, cache_dir ? cache_dir : "");
 }
 
 //////////////////////////////////////////////////////////////////////////////
-struct rtipc_group* rtipc_create_group(
+struct rtipc_group* rtipc_create_group (
         struct rtipc* rtipc, double sample_time)
 {
-    return NULL;
+    Main *main = reinterpret_cast<RtIPC::Main*>(rtipc);
+
+    return (struct rtipc_group *) main->addGroup(sample_time);
 }
 
 //////////////////////////////////////////////////////////////////////////////
-int rtipc_signal( struct rtipc_group *group, const char *name,
+int rtipc_txpdo (struct rtipc_group *g, const char *name,
         enum rtipc_datatype_t datatype, const void *addr, size_t n)
 {
+    Group *group = reinterpret_cast<RtIPC::Group*>(g);
+
+    return group->addTxPdo(name, datatype, addr, n);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void rtipc_rxpdo (struct rtipc_group *g,
+        const char *name, enum rtipc_datatype_t datatype,
+        void *addr, size_t n, unsigned char *connected)
+{
+    Group *group = reinterpret_cast<RtIPC::Group*>(g);
+    group->addRxPdo(name, datatype, addr, n, connected);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+int rtipc_prepare (struct rtipc* rtipc)
+{
+    return reinterpret_cast<RtIPC::Main*>(rtipc)->start();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void rtipc_tx (struct rtipc_group *group)
+{
+    return reinterpret_cast<RtIPC::Group*>(group)->bbGroup->transmit();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void rtipc_rx (struct rtipc_group *group)
+{
+    return reinterpret_cast<RtIPC::Group*>(group)->receive();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void rtipc_exit (struct rtipc* rtipc)
+{
+    delete reinterpret_cast<RtIPC::Main*>(rtipc);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+Main::Main (const std::string &name, const std::string &cache_dir):
+    name(name)
+{
+    confDir = cache_dir.empty() ?  QUOTE(SYSCONFDIR) "/rtipc" : cache_dir;
+    if (*confDir.rbegin() != '/')
+        confDir.append(1,'/');
+
+    if (::access(confDir.c_str(), R_OK))
+        throw std::runtime_error(
+                std::string("No access to directory ").append(confDir));
+}
+
+//////////////////////////////////////////////////////////////////////////////
+Main::~Main ()
+{
+    for (Applications::iterator it = applications.begin();
+            it != applications.end(); it++)
+        delete *it;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+Group* Main::addGroup (double sampleTime)
+{
+    Group *g = new Group(this, BB::Main::addGroup(sampleTime));
+    groups.push_back(g);
+    return g;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void Main::verifyConfig (const std::string& confFile)
+{
+    if (!::access(confFile.c_str(), F_OK)) {
+        // Config file exists. Load it
+        try {
+            BulletinBoard::Main bb(confFile);
+
+            if (compatible(bb))
+                return;
+        }
+        catch (const BB::Config::exception& e) {
+            // Some parsing or config file syntax error occurred
+            log_debug("Configuration file corrupt");
+        }
+    }
+
+    save(confFile);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+bool Main::setupRx (BB::Main *bb)
+{
+    bool used = false;
+
+    for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
+        used |= (*it)->setupRx(bb);
+
+    return used;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+int Main::start ()
+{
+    size_t begin = name.rfind('/');
+    begin = begin == std::string::npos ? 0 : (begin + 1);
+    std::string confFile = confDir + name.substr(begin) + ".conf";
+
+    verifyConfig(confFile);
+
+    // If the shared memory exists
+    int rv = openSharedMemory(true, confFile);
+    if (rv)
+        return rv;
+
+    for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
+        (*it)->setupTx();
+
+    // Connect to signals inside the application itself
+    setupRx(this);
+
+    DIR *dirp = opendir(confDir.c_str());
+    BB::Main *bb = 0;
+    while (dirp) {
+        struct dirent *dp = readdir(dirp);
+        struct stat fstat;
+
+        if (!dp)
+            break;
+
+        std::string f = confDir + dp->d_name;
+
+        // Skip if the file is the private config file
+        // or the file does not end in .conf or is not a regular file
+        if (f == confFile or f.size() <= 5 or f.substr(f.size() - 5) != ".conf"
+                or ::stat(f.c_str(), &fstat) or !S_ISREG(fstat.st_mode))
+            continue;
+
+        if (!bb)
+            bb = new BB::Main;
+
+        bb->load(f);
+
+        if (setupRx(bb)) {
+            applications.push_back(bb);
+            bb = 0;
+        }
+    }
+    delete bb;
+
     return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-int rtipc_prepare( struct rtipc* rtipc)
-{
-    return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-int rtipc_find_signal( struct rtipc_group *group, const char *name,
-        enum rtipc_datatype_t datatype, const void *addr,
-        size_t n, unsigned char *connected)
-{
-    return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void rtipc_tx( struct rtipc_group *group)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void rtipc_rx( struct rtipc_group *group)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void rtipc_exit( struct rtipc* rtipc)
-{
 }

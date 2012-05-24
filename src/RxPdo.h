@@ -21,23 +21,26 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef RXPDO_H
+#define RXPDO_H
 
-#ifdef RTIPC_DEBUG
+#include "BulletinBoard/Signal.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+namespace BB = BulletinBoard;
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+namespace RtIPC {
 
-    va_end(ap);
+class RxPdo: public BB::Signal {
+    public:
+        RxPdo(const std::string& name, 
+                const BB::DataType& datatype, size_t n,
+                void *addr, unsigned char *connected);
+
+        void * const addr;
+        unsigned char * const connected;
+    private:
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // RXPDO_H

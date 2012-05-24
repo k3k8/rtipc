@@ -21,23 +21,22 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef BB_FLOCK_H
+#define BB_FLOCK_H
 
-#ifdef RTIPC_DEBUG
+#include <string>
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+namespace BulletinBoard {
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+class Flock {
+    public:
+        Flock(const std::string &file);
+        ~Flock();
 
-    va_end(ap);
+    private:
+        int fd;
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // BB_FLOCK_H

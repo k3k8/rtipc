@@ -21,23 +21,38 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef BB_SEM_H
+#define BB_SEM_H
 
-#ifdef RTIPC_DEBUG
+#include <stddef.h>
+#include <sys/sem.h>
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+namespace BulletinBoard {
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+class Semaphore {
+    public:
+        Semaphore(int semid, size_t instance);
+        void lock();
+        void unlock();
 
-    va_end(ap);
+    private:
+        const int semid;
+
+        struct sembuf sop;
+};
+
+class SemaphoreLock {
+    public:
+        SemaphoreLock(Semaphore *s): sem(s) {
+            sem->lock();
+        }
+        ~SemaphoreLock() {
+            sem->unlock();
+        }
+    private:
+        Semaphore * const sem;
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // BB_SEM_H

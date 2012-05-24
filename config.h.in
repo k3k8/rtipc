@@ -21,23 +21,24 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef RTIPC_CONFIG_H
+#define RTIPC_CONFIG_H
 
-#ifdef RTIPC_DEBUG
+#define MAJOR_VERSION @MAJOR_VERSION@
+#define MINOR_VERSION @MINOR_VERSION@
+#define PATCH_LEVEL   @PATCH_LEVEL@
+#define PROJECT_NAME  @PROJECT_NAME@
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+#define PREFIX      @PREFIX@
+#define SYSCONFDIR  @ABS_SYSCONFDIR@
+#define INCLUDEDIR  @ABS_INCLUDEDIR@
+#define EXECDIR     @ABS_EXECDIR@
+#define LIBDIR      @ABS_LIBDIR@
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+#define STR(x) #x
+#define QUOTE(x) STR(x)
 
-    va_end(ap);
-}
+#cmakedefine SRC_PATH_LENGTH @SRC_PATH_LENGTH@
+#cmakedefine RTIPC_DEBUG
 
-#endif //RTIPC_DEBUG
+#endif //RTIPC_CONFIG_H

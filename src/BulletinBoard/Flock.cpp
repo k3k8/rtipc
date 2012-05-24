@@ -21,23 +21,42 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#include "../Debug.h"
 
-#ifdef RTIPC_DEBUG
+#include "Flock.h"
+#include <iostream>
+#include <stdexcept>
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/types.h>
+
+using namespace BulletinBoard;
+
+/////////////////////////////////////////////////////////////////////////////
+Flock::Flock (const std::string &file)
 {
-    va_list ap;
-    va_start(ap, fmt);
+    struct flock f;
+    int rv;
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+    fd = open(file.c_str(), O_WRONLY);
 
-    va_end(ap);
+    if (fd < 0)
+        throw std::runtime_error("Could not open lock file");
+
+    f.l_type = F_WRLCK;
+    f.l_whence = SEEK_SET;
+    f.l_start = 0;
+    f.l_len = 1;
+
+    while ((rv = fcntl(fd, F_SETLKW, &f)) == -1) {
+        if (errno != EINTR)
+            throw std::runtime_error("flock()");
+    }
 }
 
-#endif //RTIPC_DEBUG
+/////////////////////////////////////////////////////////////////////////////
+Flock::~Flock ()
+{
+    close(fd);
+}

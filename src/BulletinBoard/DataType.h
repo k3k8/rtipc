@@ -21,23 +21,32 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef BB_DATATYPE_H
+#define BB_DATATYPE_H
 
-#ifdef RTIPC_DEBUG
+#include <string>
+#include "DataType.h"
+#include "include/rtipc.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+namespace BulletinBoard {
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+class DataType {
+    public:
+        DataType(enum rtipc_datatype_t datatype);
+        DataType(const std::string& dt);
 
-    va_end(ap);
+        size_t size() const;
+        const char* c_str() const;
+
+        bool operator!= (const DataType& other) const;
+
+    private:
+        const size_t dtIdx;
+
+        static size_t fromString(const char *dt);
+        static size_t fromType(enum rtipc_datatype_t dt);
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // BB_DATATYPE_H

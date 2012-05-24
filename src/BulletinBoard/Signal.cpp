@@ -21,23 +21,31 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#include "../Debug.h"
 
-#ifdef RTIPC_DEBUG
+#include "Signal.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
+using namespace BulletinBoard;
+
+//////////////////////////////////////////////////////////////////////////////
+Signal::Signal (Group* group, const std::string& name,
+        const DataType& datatype, size_t n):
+    group(group), name(name), dataType(datatype),
+    elementCount(n)
 {
-    va_list ap;
-    va_start(ap, fmt);
-
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-
-    va_end(ap);
+    //sourceAddr = 0;
 }
 
-#endif //RTIPC_DEBUG
+/////////////////////////////////////////////////////////////////////////////
+size_t Signal::size () const
+{
+    return dataType.size() * elementCount;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+bool Signal::operator!= (const Signal& other) const
+{
+    return other.name != name
+        or other.dataType != dataType
+        or other.elementCount != elementCount;
+}

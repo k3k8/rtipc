@@ -21,23 +21,52 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef MAIN_H
+#define MAIN_H
 
-#ifdef RTIPC_DEBUG
+#include "BulletinBoard/DataType.h"
+#include "BulletinBoard/Main.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+#include <string>
+#include <set>
+#include <map>
+#include <list>
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+namespace BB = BulletinBoard;
 
-    va_end(ap);
+namespace RtIPC {
+
+class Group;
+class RxPdo;
+
+class Main: public BB::Main {
+    public:
+        Main(const std::string &name, const std::string &cache_dir);
+        ~Main();
+
+        const std::string name;
+
+        Group *addGroup(double sample_time);
+
+        int start();
+
+    private:
+        typedef std::list<Group*> Groups;
+        Groups groups;
+
+        std::string confDir;
+
+        std::set<std::string> pdos;
+
+        typedef std::list<BB::Main*> Applications;
+        Applications applications;
+
+        void verifyConfig(const std::string& confFile);
+        bool setupRx(BB::Main *bb);
+
+        //std::list<const RxPdo*> rxPdo;
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // MAIN_H

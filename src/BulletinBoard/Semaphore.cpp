@@ -21,23 +21,29 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#include "Semaphore.h"
 
-#ifdef RTIPC_DEBUG
+using namespace BulletinBoard;
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
+//////////////////////////////////////////////////////////////////////////////
+Semaphore::Semaphore (int semid, size_t instance):
+    semid(semid)
 {
-    va_list ap;
-    va_start(ap, fmt);
-
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-
-    va_end(ap);
+    sop.sem_num = instance;
 }
 
-#endif //RTIPC_DEBUG
+//////////////////////////////////////////////////////////////////////////////
+void Semaphore::lock ()
+{
+    sop.sem_op = -1;
+    sop.sem_flg = SEM_UNDO;
+    semop(semid, &sop, 1);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void Semaphore::unlock ()
+{
+    sop.sem_op = 1;
+    sop.sem_flg = 0;
+    semop(semid, &sop, 1);
+}

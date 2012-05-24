@@ -21,23 +21,37 @@
  *
  *****************************************************************************/
 
-#include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
+#ifndef BB_SIGNAL_H
+#define BB_SIGNAL_H
 
-#ifdef RTIPC_DEBUG
+#include <string>
+#include "DataType.h"
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
+namespace BulletinBoard {
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+class Group;
 
-    va_end(ap);
+class Signal {
+    public:
+        Signal(Group *group, const std::string& name,
+                const DataType& datatype, size_t n);
+
+        Group * const group;
+        const std::string name;
+        const DataType dataType;
+        const size_t elementCount;
+
+        char *shmemAddr;
+
+        size_t size() const;
+
+        bool operator!= (const Signal& other) const;
+        bool operator== (const Signal& other) const {
+            return !(*this != other);
+        }
+    private:
+};
+
 }
 
-#endif //RTIPC_DEBUG
+#endif // BB_SIGNAL_H

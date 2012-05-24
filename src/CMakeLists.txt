@@ -2,22 +2,22 @@
 #
 #  $Id$
 #
-#  Copyright 2010 Richard Hacker (lerichi at gmx dot net)
+#  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
 #
-#  This file is part of the pdserv library.
+#  This file is part of the rtipc library.
 #
-#  The pdserv library is free software: you can redistribute it and/or modify
+#  The rtipc library is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or (at your
 #  option) any later version.
 #
-#  The pdserv library is distributed in the hope that it will be useful, but
+#  The rtipc library is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 #  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 #  License for more details.
 #
 #  You should have received a copy of the GNU Lesser General Public License
-#  along with the pdserv library. If not, see <http://www.gnu.org/licenses/>.
+#  along with the rtipc library. If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
 
@@ -28,43 +28,22 @@ INCLUDE_DIRECTORIES(
         )
 
 SET (CMAKE_CXX_FLAGS "-Wall")
-# 
-# SET (msrproto_src
-#     msrproto/StatSignal.cpp             msrproto/StatSignal.h
-#     msrproto/TimeSignal.cpp             msrproto/TimeSignal.h
-#     msrproto/Subscription.cpp           msrproto/Subscription.h
-#     msrproto/SubscriptionManager.cpp    msrproto/SubscriptionManager.h
-#     #msrproto/Outbuf.cpp                 msrproto/Outbuf.h
-#     msrproto/Session.cpp                msrproto/Session.h
-#     msrproto/XmlParser.cpp              msrproto/XmlParser.h
-#     msrproto/Attribute.cpp              msrproto/Attribute.h
-#     msrproto/XmlElement.cpp             msrproto/XmlElement.h
-#     msrproto/Variable.cpp               msrproto/Variable.h
-#     msrproto/Channel.cpp                msrproto/Channel.h
-#     msrproto/Parameter.cpp              msrproto/Parameter.h
-#     msrproto/Directory.cpp              msrproto/Directory.h
-#     msrproto/Server.cpp                 msrproto/Server.h
-#     )
-# 
-# SET (main_src
-#                         SessionStatistics.h
-#     Config.cpp          Config.h
-#     Session.cpp         Session.h
-#     Task.cpp            Task.h
-#     Main.cpp            Main.h
-#     Variable.cpp        Variable.h
-#     Signal.cpp          Signal.h
-#     Parameter.cpp       Parameter.h
-#     ProcessParameter.cpp ProcessParameter.h
-#                         SessionShadow.h
-#     Debug.cpp           Debug.h
-#     SessionTaskData.cpp SessionTaskData.h
-#     )
 
 FIND_PACKAGE (Yaml REQUIRED)
 
 ADD_LIBRARY( ${PROJECT_NAME} SHARED
-    Main.cpp
+    Group.cpp Group.h
+    Main.cpp Main.h
+    Debug.cpp Debug.h
+    RxPdo.cpp RxPdo.h
+
+    BulletinBoard/Group.cpp BulletinBoard/Group.h
+    BulletinBoard/Flock.cpp BulletinBoard/Flock.h
+    BulletinBoard/Main.cpp BulletinBoard/Main.h
+    BulletinBoard/Config.cpp BulletinBoard/Config.h
+    BulletinBoard/DataType.cpp BulletinBoard/DataType.h
+    BulletinBoard/Semaphore.cpp BulletinBoard/Semaphore.h
+    BulletinBoard/Signal.cpp BulletinBoard/Signal.h
     )
 
 SET_TARGET_PROPERTIES ( ${PROJECT_NAME} PROPERTIES
@@ -72,8 +51,8 @@ SET_TARGET_PROPERTIES ( ${PROJECT_NAME} PROPERTIES
     SOVERSION "${SOVERSION}"
     CLEAN_DIRECT_OUTPUT 1)
 
-TARGET_LINK_LIBRARIES (${PROJECT_NAME} ${YAML_LIBRARIES})
-#INSTALL (TARGETS ${PROJECT_NAME} DESTINATION "${ABS_LIBDIR}" LIBRARY)
+TARGET_LINK_LIBRARIES (${PROJECT_NAME} ${YAML_LIBRARIES} mhash)
+INSTALL (TARGETS ${PROJECT_NAME} DESTINATION "${ABS_LIBDIR}" LIBRARY)
 
 # pkgconfig files
 CONFIGURE_FILE (
