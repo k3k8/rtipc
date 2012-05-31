@@ -44,9 +44,9 @@ int main(int argc, const char *argv[])
     uint8_t sig03, sig203;
     unsigned char sig203_connected, sig02_connected;
 
-    assert(!rtipc_txpdo(group1, "SIG01", rtipc_double_T, sig01, 6));
-    assert(!rtipc_txpdo(group1, "SIG02", rtipc_uint16_T, sig02, 5));
-    assert(!rtipc_txpdo(group1, "SIG03", rtipc_boolean_T, &sig03, 1));
+    assert(rtipc_txpdo(group1, "SIG01", rtipc_double_T, sig01, 6));
+    assert(rtipc_txpdo(group1, "SIG02", rtipc_uint16_T, sig02, 5));
+    assert(rtipc_txpdo(group1, "SIG03", rtipc_boolean_T, &sig03, 1));
 
     rtipc_rxpdo(group1, "SIG2.03",
             rtipc_boolean_T, &sig203, 1, &sig203_connected);
@@ -60,13 +60,12 @@ int main(int argc, const char *argv[])
     while (1) {
         struct timespec time;
 
-        //sleep(1);
         usleep(100000);
         clock_gettime(CLOCK_REALTIME, &time);
 
-        printf("ts\n");
         rtipc_rx(group1);
         rtipc_rx(group2);
+        printf("ts %u %u\n", sig02[0], sig02[5]);
 
         sig01[0] = !sig01[0];
         sig01[1] += 0.1;

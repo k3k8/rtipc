@@ -27,7 +27,7 @@
 #include "Signal.h"
 #include "Group.h"
 #include "Flock.h"
-#include "Config.h"
+#include "YamlDoc.h"
 #include <sstream>
 #include <fstream>
 #include <cerrno>
@@ -62,19 +62,22 @@ void Main::load (const std::string& file)
 {
     lockFile = file;
 
-    Config conf(file);
-    Config::Node root(conf);
+    YAML::Doc conf(file);
+    YAML::Sequence groups(conf);
 
-    for (Config::Node::List groups(root); groups; ++groups) {
+    for (YAML::Sequence::Iterator g(groups); g; ++g) {
 
-        Config::Node::Group group(*groups);
+        YAML::Map group(*g);
 
         Group *g = addGroup(group["SampleTime"]);
+        YAML::Sequence signals = group["Signals"];
 
-        for (Config::Node::List it(group["Signals"]); it; ++it) {
+        for (YAML::Sequence::Iterator it(signals); it; ++it) {
 
-            Config::Node::Group sigSpec = *it;
-            newSignal(g, sigSpec["Name"], DataType(sigSpec["DataType"]),
+            YAML::Map sigSpec = *it;
+            newSignal(g,
+                    sigSpec["Name"].toString(),
+                    DataType(sigSpec["DataType"].toString()),
                     static_cast<unsigned int>(sigSpec["Length"]));
         }
     }
@@ -104,9 +107,10 @@ const Signal* Main::newSignal (Group *group, const std::string &name,
     if (signalMap[name])
         return 0;
 
-    signalMap[name] = group->newSignal(name, datatype, n);
+    const Signal* s = group->newSignal(name, datatype, n);
+    signalMap[name] = s;
 
-    return signalMap[name];
+    return s;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -343,142 +347,20 @@ bool Main::save (const std::string &file)
 {
     lockFile = file;
 
-    yaml_document_t output_document;
-    yaml_emitter_t emitter;
-    //int key, value, node, group, signals;
-    int root;
-    FILE *f = fopen(file.c_str(), "w");
+    YAML::Doc conf(YAML::Node::Sequence);
+    YAML::Sequence groups(conf);
 
-    std::ostringstream os;
+    for (Groups::const_iterator it = this->groups.begin();
+            it != this->groups.end(); it++) {
 
-    ::memset(&output_document, 0, sizeof(output_document));
+        if ((*it)->empty())
+            continue;
 
-    if (!yaml_document_initialize(&output_document, NULL, NULL, NULL, 0, 1))
-        goto document_error;
+        YAML::Map g(groups.appendNode(YAML::Node::Map));
+        (*it)->save(g);
+    }
 
-    root = yaml_document_add_sequence(&output_document, NULL,
-            YAML_BLOCK_SEQUENCE_STYLE);
-    if (!root)
-        goto document_error;
-
-//    for (Groups::const_iterator it = groups.begin();
-//            it != groups.end(); it++) {
-//        const Group *g = *it;
-//        //const Group::Signals& groupSignals = g->getSignals();
-//        const Group::Signals groupSignals;
-//
-//        if (groupSignals.empty())
-//            continue;
-//
-//        group = yaml_document_add_mapping(&output_document, NULL,
-//                YAML_BLOCK_MAPPING_STYLE);
-//        if (!yaml_document_append_sequence_item(&output_document, root, group))
-//            goto document_error;
-//
-//        key = yaml_document_add_scalar(&output_document, NULL,
-//                (yaml_char_t*)"GroupName", -1, YAML_PLAIN_SCALAR_STYLE);
-//        value = yaml_document_add_scalar(&output_document, NULL,
-//                (yaml_char_t*)"group", -1,
-//                YAML_DOUBLE_QUOTED_SCALAR_STYLE);
-//        if (!key or !value
-//                or !yaml_document_append_mapping_pair(&output_document,
-//                    group, key, value))
-//            goto document_error;
-//
-//        os.str(std::string());
-//        os << g->sampleTime;
-//        key = yaml_document_add_scalar(&output_document, NULL,
-//                (yaml_char_t*)"SampleTime", -1, YAML_PLAIN_SCALAR_STYLE);
-//        value = yaml_document_add_scalar(&output_document, NULL,
-//                (yaml_char_t*)os.str().c_str(), -1,
-//                YAML_PLAIN_SCALAR_STYLE);
-//        if (!key or !value
-//                or !yaml_document_append_mapping_pair(&output_document,
-//                    group, key, value))
-//            goto document_error;
-//
-//        key = yaml_document_add_scalar(&output_document, NULL,
-//                (yaml_char_t*)"Signals", -1, YAML_PLAIN_SCALAR_STYLE);
-//        signals = yaml_document_add_sequence(&output_document, NULL,
-//                YAML_BLOCK_SEQUENCE_STYLE);
-//        if (!key or !signals
-//                or !yaml_document_append_mapping_pair(&output_document,
-//                    group, key, signals))
-//            goto document_error;
-//
-//        for (Group::Signals::const_iterator it = groupSignals.begin();
-//                it != groupSignals.end(); it++) {
-//            const Signal *s = *it;
-//
-//            node = yaml_document_add_mapping(&output_document, NULL,
-//                    YAML_BLOCK_MAPPING_STYLE);
-//            if (!node)
-//                goto document_error;
-//            if (!yaml_document_append_sequence_item(&output_document, signals, node))
-//                goto document_error;
-//
-//            key = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)"Name", -1, YAML_PLAIN_SCALAR_STYLE);
-//            value = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)s->name.c_str(), -1,
-//                    YAML_DOUBLE_QUOTED_SCALAR_STYLE);
-//            if (!key or !value
-//                    or !yaml_document_append_mapping_pair(&output_document,
-//                        node, key, value))
-//                goto document_error;
-//
-//            key = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)"DataType", -1, YAML_PLAIN_SCALAR_STYLE);
-//            value = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)s->dataType.c_str(), -1, YAML_PLAIN_SCALAR_STYLE);
-//            yaml_document_append_mapping_pair(&output_document,
-//                    node, key, value);
-//
-//            os.str(std::string());
-//            os << s->elementCount;
-//            key = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)"Length", -1, YAML_PLAIN_SCALAR_STYLE);
-//            value = yaml_document_add_scalar(&output_document, NULL,
-//                    (yaml_char_t*)os.str().c_str(), -1, YAML_PLAIN_SCALAR_STYLE);
-//            yaml_document_append_mapping_pair(&output_document,
-//                    node, key, value);
-//
-////            os.str(std::string());
-////            os << s->memOffset;
-////            key = yaml_document_add_scalar(&output_document, NULL,
-////                    (yaml_char_t*)"Offset", -1, YAML_PLAIN_SCALAR_STYLE);
-////            value = yaml_document_add_scalar(&output_document, NULL,
-////                    (yaml_char_t*)os.str().c_str(), -1, YAML_PLAIN_SCALAR_STYLE);
-////            yaml_document_append_mapping_pair(&output_document,
-////                    node, key, value);
-//        }
-//    }
-
-    ::memset(&emitter, 0, sizeof(emitter));
-
-    if (!yaml_emitter_initialize(&emitter))
-        goto emitter_error;
-    yaml_emitter_set_output_file(&emitter, f);
-    yaml_emitter_set_canonical(&emitter, 0);
-    yaml_emitter_set_unicode(&emitter, 1);
-
-    if (!yaml_emitter_open(&emitter))
-        goto emitter_error;
-
-    if (!yaml_emitter_dump(&emitter, &output_document))
-        goto emitter_error;
-    if (!yaml_emitter_close(&emitter))
-        goto emitter_error;
-
-    yaml_emitter_delete(&emitter);
-    yaml_document_delete(&output_document);
-
-    fclose(f);
+    conf.save(file);
 
     return false;
-
-document_error:
-emitter_error:
-    log_debug("doc ero");
-    return -1;
 }

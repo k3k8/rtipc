@@ -63,6 +63,26 @@ const Signal* Group::newSignal (const std::string &name,
 }
 
 /////////////////////////////////////////////////////////////////////////////
+void Group::save(YAML::Node& node) const
+{
+    YAML::Map d(node);
+    d.append("Name", "GroupName");
+    d.append("SampleTime", sampleTime);
+
+    YAML::Sequence signals(d.appendNode("Signals", YAML::Node::Sequence));
+
+    for (SignalMap::const_iterator it = this->signals.begin();
+            it != this->signals.end(); ++it) {
+        const Signal *s = it->second;
+        YAML::Map map(signals.appendNode(YAML::Node::Map));
+
+        map.append("Name", s->name, '"');
+        map.append("DataType", s->dataType.c_str());
+        map.append("Length", s->elementCount);
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
 void Group::copy(const Group *other)
 {
     for (SignalMap::const_iterator it = other->signals.begin();
@@ -151,6 +171,13 @@ void *Group::prepareIPC (size_t *counter, void *addr, int semid, int instance)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+void Group::setAddr (const Signal *s, const void* addr) const
+{
+    if (s->srcAddr)
+        *s->srcAddr = addr ? addr : s->src;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 void Group::setupTx (const PdoMap& txPdoData)
 {
     copy_list = new CopyList[signals.size() + 1];
@@ -158,14 +185,17 @@ void Group::setupTx (const PdoMap& txPdoData)
 
     for (SignalMap::const_iterator it = signals.begin();
             it != signals.end(); it++) {
-        const Signal *s = it->second;
+        Signal *s = it->second;
         PdoMap::const_iterator it2 = txPdoData.find(s);
 
         cl->len = s->size();
         cl->dst = s->shmemAddr;
 
         if (it2 != txPdoData.end()) {
-            cl->src = it2->second;
+            s->src = it2->second;
+            s->srcAddr = &cl->src;
+
+            cl->src = s->src;
             cl++;
         }
     }
@@ -180,8 +210,10 @@ void Group::transmit () const
         return;
 
     SemaphoreLock lock(sem);
-    for (const CopyList *cl = copy_list; cl->src; cl++)
+    for (const CopyList *cl = copy_list; cl->src; cl++) {
         ::memcpy(cl->dst, cl->src, cl->len);
+        //printf(".");
+    }
 
     (*counter)++;
 }
@@ -192,7 +224,9 @@ size_t Group::receive (const CopyList* copy_list) const
     SemaphoreLock lock(sem);
     for (const CopyList *cl = copy_list; cl->src; cl++) {
         ::memcpy(cl->dst, cl->src, cl->len);
+        //printf("x");
     }
 
+    //printf("\n");
     return *counter;
 }

@@ -65,6 +65,8 @@ class Config {
                     public:
                         List(const Node&);
 
+                        Config::Node createNode();
+
                         Node operator*() const;
                         List& operator++();
                         operator bool() const;
@@ -75,7 +77,7 @@ class Config {
                         yaml_node_item_t *it;
                 };
 
-                Node(yaml_document_t& doc, yaml_node_t *node);
+                Node(yaml_document_t& doc, int nodeId);
                 Node(const Node&);
                 Node(Config&);
 
@@ -84,13 +86,18 @@ class Config {
                 operator double() const;
                 operator std::string() const;
 
+                Node createSequence();
+
             private:
                 yaml_document_t& document;
-                yaml_node_t * const node;
+                int nodeId;
+                //yaml_node_t *node;
         };
 
-        Config(const std::string&);
+        Config(const std::string& file = std::string());
         ~Config();
+
+        int save(const std::string& file);
 
     protected:
         Config(yaml_document_t *document, yaml_node_t *node);

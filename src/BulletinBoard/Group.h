@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include "Semaphore.h"
 #include "DataType.h"
+#include "YamlDoc.h"
 
 namespace BulletinBoard {
 
@@ -43,6 +44,7 @@ class Group {
         const Signal* newSignal(const std::string &name,
                 const DataType& datatype, size_t n);
 
+        void save(YAML::Node&) const;
         bool empty() const;
         void copy(const Group *other);
         uint32_t checkSum() const;
@@ -55,6 +57,7 @@ class Group {
 
         typedef std::map<const Signal *, const void*> PdoMap;
         void setupTx(const PdoMap& txPdoData);
+        void setAddr(const Signal* s, const void *) const;
 
         struct CopyList {
             void *dst;

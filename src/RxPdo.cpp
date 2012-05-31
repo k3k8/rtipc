@@ -24,14 +24,16 @@
 #include "Debug.h"
 
 #include "RxPdo.h"
+#include "Group.h"
 
 using namespace RtIPC;
 
 //////////////////////////////////////////////////////////////////////////////
-RxPdo::RxPdo (const std::string& name,
+RxPdo::RxPdo (const Group* group, const std::string& name,
         const BB::DataType& datatype, size_t n,
         void *addr, unsigned char *connected):
-    Signal(group, name, datatype, n), addr(addr), connected(connected)
+    Signal(group->bbGroup, name, datatype, n),
+    group(group), addr(addr), connected(connected)
 {
     *connected = 0;
 }

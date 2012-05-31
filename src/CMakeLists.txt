@@ -40,7 +40,7 @@ ADD_LIBRARY( ${PROJECT_NAME} SHARED
     BulletinBoard/Group.cpp BulletinBoard/Group.h
     BulletinBoard/Flock.cpp BulletinBoard/Flock.h
     BulletinBoard/Main.cpp BulletinBoard/Main.h
-    BulletinBoard/Config.cpp BulletinBoard/Config.h
+    BulletinBoard/YamlDoc.cpp BulletinBoard/YamlDoc.h
     BulletinBoard/DataType.cpp BulletinBoard/DataType.h
     BulletinBoard/Semaphore.cpp BulletinBoard/Semaphore.h
     BulletinBoard/Signal.cpp BulletinBoard/Signal.h

@@ -29,7 +29,7 @@
 #include "Main.h"
 #include "Group.h"
 #include "BulletinBoard/Signal.h"
-#include "BulletinBoard/Config.h"
+#include "BulletinBoard/YamlDoc.h"
 #include "RxPdo.h"
 #include "BulletinBoard/Main.h"
 #include <unistd.h>
@@ -62,21 +62,36 @@ struct rtipc_group* rtipc_create_group (
 }
 
 //////////////////////////////////////////////////////////////////////////////
-int rtipc_txpdo (struct rtipc_group *g, const char *name,
+const struct txpdo* rtipc_txpdo (struct rtipc_group *g, const char *name,
         enum rtipc_datatype_t datatype, const void *addr, size_t n)
 {
     Group *group = reinterpret_cast<RtIPC::Group*>(g);
 
-    return group->addTxPdo(name, datatype, addr, n);
+    return (const struct txpdo*)group->addTxPdo(name, datatype, addr, n);
 }
 
 //////////////////////////////////////////////////////////////////////////////
-void rtipc_rxpdo (struct rtipc_group *g,
+void rtipc_set_txpdo_addr (const struct txpdo* pdo, const void *addr)
+{
+    const BB::Signal* s = reinterpret_cast<const BB::Signal*>(pdo);
+    s->group->setAddr(s, addr);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+const struct rxpdo* rtipc_rxpdo (struct rtipc_group *g,
         const char *name, enum rtipc_datatype_t datatype,
         void *addr, size_t n, unsigned char *connected)
 {
     Group *group = reinterpret_cast<RtIPC::Group*>(g);
-    group->addRxPdo(name, datatype, addr, n, connected);
+    const RxPdo* pdo = group->addRxPdo(name, datatype, addr, n, connected);
+    return (const struct rxpdo*)pdo;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+void rtipc_set_rxpdo_addr (const struct rxpdo* pdo, const void *addr)
+{
+    const RxPdo* s = reinterpret_cast<const RxPdo*>(pdo);
+    s->group->setAddr(s, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -144,7 +159,7 @@ void Main::verifyConfig (const std::string& confFile)
             if (compatible(bb))
                 return;
         }
-        catch (const BB::Config::exception& e) {
+        catch (const std::exception& e) {
             // Some parsing or config file syntax error occurred
             log_debug("Configuration file corrupt");
         }
@@ -170,6 +185,8 @@ int Main::start ()
     size_t begin = name.rfind('/');
     begin = begin == std::string::npos ? 0 : (begin + 1);
     std::string confFile = confDir + name.substr(begin) + ".conf";
+
+    save(confFile);
 
     verifyConfig(confFile);
 

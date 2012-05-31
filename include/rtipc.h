@@ -76,7 +76,7 @@ struct rtipc_group* rtipc_create_group(
  * is called
  *
  */
-int rtipc_txpdo(
+const struct txpdo* rtipc_txpdo(
         struct rtipc_group *group,
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */
@@ -84,8 +84,9 @@ int rtipc_txpdo(
         size_t n                  /**< Element count. */
         );
 
-int rtipc_prepare(
-        struct rtipc* rtipc     /**< Pointer to rtipc structure */
+void rtipc_set_txpdo_addr(
+        const struct txpdo*,
+        const void *addr          /**< Signal address */
         );
 
 /** Find an IPC signal
@@ -94,13 +95,22 @@ int rtipc_prepare(
  * properties
  *
  */
-void rtipc_rxpdo(
+const struct rxpdo* rtipc_rxpdo(
         struct rtipc_group *group,
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */
         void *addr,               /**< Signal address */
         size_t n,                 /**< Element count. */
         unsigned char *connected  /**< Connected status */
+        );
+
+void rtipc_set_rxpdo_addr(
+        const struct rxpdo*,
+        const void *addr          /**< Signal address */
+        );
+
+int rtipc_prepare(
+        struct rtipc* rtipc     /**< Pointer to rtipc structure */
         );
 
 void rtipc_tx(

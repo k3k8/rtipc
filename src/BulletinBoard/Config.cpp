@@ -26,6 +26,7 @@
 #include <cerrno>
 
 #include "Config.h"
+#include "../Debug.h"
 
 #include <yaml.h>
 using namespace BulletinBoard;
@@ -38,6 +39,11 @@ using namespace BulletinBoard;
 /////////////////////////////////////////////////////////////////////////////
 Config::Config (const std::string& file)
 {
+    if (file.empty()) {
+        if (!yaml_document_initialize(&document, NULL, NULL, NULL, 0, 1));
+        return;
+    }
+
     yaml_parser_t parser;
     FILE *fh;
 
@@ -68,8 +74,6 @@ Config::Config (const std::string& file)
     ::fclose(fh);
 
     //node = yaml_document_get_root_node(&document);
-
-    //return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -79,15 +83,49 @@ Config::~Config ()
 }
 
 /////////////////////////////////////////////////////////////////////////////
+int Config::save(const std::string& file)
+{
+     return 0;
+
+     FILE *f = fopen(file.c_str(), "w");
+     yaml_emitter_t emitter;
+
+     if (!yaml_emitter_initialize(&emitter))
+         goto emitter_error;
+     yaml_emitter_set_output_file(&emitter, f);
+     yaml_emitter_set_canonical(&emitter, 0);
+     yaml_emitter_set_unicode(&emitter, 1);
+ 
+     if (!yaml_emitter_open(&emitter))
+         goto emitter_error;
+ 
+     if (!yaml_emitter_dump(&emitter, &document))
+         goto emitter_error;
+     if (!yaml_emitter_close(&emitter))
+         goto emitter_error;
+ 
+     yaml_emitter_delete(&emitter);
+ 
+     fclose(f);
+
+     return 0;
+
+emitter_error:
+     return -1;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::Group::Group(const Config::Node& other): document (other.document)
 {
-    if (!other.node or other.node->type != YAML_MAPPING_NODE) {
+    yaml_node_t *node = yaml_document_get_node(&document, other.nodeId);
+
+    if (!node or node->type != YAML_MAPPING_NODE) {
         throw exception();
     }
 
-    for (yaml_node_pair_t *pair = other.node->data.mapping.pairs.start;
-            pair != other.node->data.mapping.pairs.top; ++pair) {
+    for (yaml_node_pair_t *pair = node->data.mapping.pairs.start;
+            pair != node->data.mapping.pairs.top; ++pair) {
         yaml_node_t *n = yaml_document_get_node(&document, pair->key);
         if (n->type == YAML_SCALAR_NODE) {
             std::string key = std::string((const char *)n->data.scalar.value,
@@ -104,26 +142,32 @@ Config::Node Config::Node::Group::operator[] (const char *key) const
     if (it == map.end())
         throw exception();
 
-    return Config::Node(document,
-            yaml_document_get_node(&document, it->second));
+    return Config::Node(document, it->second);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::List::List(const Config::Node& other): node (other)
 {
-    if (!other.node or other.node->type != YAML_SEQUENCE_NODE) {
+    yaml_node_t *node = yaml_document_get_node(&other.document, other.nodeId);
+
+    if (!node or node->type != YAML_SEQUENCE_NODE) {
         throw exception();
     }
 
-    it = node.node->data.sequence.items.start;
+    it = node->data.sequence.items.start;
 }
+
+// /////////////////////////////////////////////////////////////////////////////
+// Config::Node Config::Node::List::createNode()
+// {
+//     return Config::Node(*this);
+// }
 
 /////////////////////////////////////////////////////////////////////////////
 Config::Node Config::Node::List::operator* () const
 {
-    return Config::Node(node.document,
-            yaml_document_get_node(&node.document, *it));
+    return Config::Node(node.document, *it);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -136,37 +180,40 @@ Config::Node::List& Config::Node::List::operator++ ()
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::List::operator bool () const
 {
-    return it != node.node->data.sequence.items.top;
+    yaml_node_t *n = yaml_document_get_node(&node.document, node.nodeId);
+    return it != n->data.sequence.items.top;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-Config::Node::Node (yaml_document_t& doc, yaml_node_t *node):
-    document(doc), node(node)
+Config::Node::Node (yaml_document_t& doc, int nodeId):
+    document(doc), nodeId(nodeId)
 {
 }
 
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::Node (const Config::Node& other):
-    document(other.document), node(other.node)
+    document(other.document), nodeId(other.nodeId)
 {
 }
 
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::Node (Config& other):
-    document(other.document),
-    node(yaml_document_get_root_node(&document))
+    document(other.document), nodeId(1)
 {
+    log_debug("%i", nodeId);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 Config::Node::operator std::string () const
 {
-    if (node->type != YAML_SCALAR_NODE)
+    yaml_node_t *n = yaml_document_get_node(&document, nodeId);
+
+    if (n->type != YAML_SCALAR_NODE)
         throw exception();
 
-    return std::string((char*)node->data.scalar.value,
-            node->data.scalar.length);
+    return std::string((char*)n->data.scalar.value,
+            n->data.scalar.length);
 }
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -212,4 +259,18 @@ Config::Node::operator unsigned int () const
         throw exception();
 
     return strtoul(sval.c_str(), 0, 0);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+Config::Node Config::Node::createSequence()
+{
+    int n = yaml_document_add_sequence( &document, NULL,
+            YAML_BLOCK_SEQUENCE_STYLE);
+
+    if (nodeId) {
+        yaml_document_add_sequence(&);
+    }
+
+    //log_debug("%i %p", n, node);
+    return Config::Node(document, n);
 }

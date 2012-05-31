@@ -48,14 +48,15 @@ class Group {
         Main * const main;
         BB::Group * const bbGroup;
 
-        int addTxPdo(const std::string &name,
+        const BB::Signal* addTxPdo(const std::string &name,
                 const BB::DataType& datatype, const void *addr, size_t n);
-        void addRxPdo(const std::string &name,
+        const RxPdo* addRxPdo(const std::string &name,
                 const BB::DataType& datatype, void *addr, size_t n,
                 unsigned char *connected);
 
         void setupTx();
         bool setupRx(BB::Main *bb);
+        void setAddr(const RxPdo *pdo, const void *) const;
 
         void receive() const;
 
@@ -67,6 +68,10 @@ class Group {
 
         struct ChunkData {
             const BB::Group *group;
+            size_t timeout;
+            mutable size_t counter;
+            size_t count;
+            unsigned char **connected;
             BulletinBoard::Group::CopyList *copy_list;
         };
 

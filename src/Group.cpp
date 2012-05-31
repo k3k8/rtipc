@@ -42,25 +42,26 @@ Group::~Group ()
 }
 
 /////////////////////////////////////////////////////////////////////////////
-int Group::addTxPdo (const std::string &name,
+const BB::Signal* Group::addTxPdo (const std::string &name,
         const BB::DataType& datatype, const void *addr, size_t n)
 {
     const BB::Signal *s = main->newSignal(bbGroup, name, datatype, n);
 
     if (!s)
-        return -EEXIST;
+        return 0;
 
     txPdoData[s] = addr;
 
-    return 0;
+    return s;
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void Group::addRxPdo (const std::string &name,
+const RxPdo* Group::addRxPdo (const std::string &name,
         const BB::DataType& datatype, void *addr, size_t n,
         unsigned char *connected)
 {
-    rxPdo.push_back(new RxPdo(name, datatype, n, addr, connected));
+    rxPdo.push_back(new RxPdo(this, name, datatype, n, addr, connected));
+    return *rxPdo.rbegin();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -98,22 +99,32 @@ bool Group::setupRx (BB::Main *main)
     for (RxPdoMap::const_iterator it = signals.begin();
             it != signals.end(); it++) {
         ChunkData chunkData;
+        unsigned char **connected = new unsigned char*[it->second.size() + 1];
         BB::Group::CopyList *copy_list =
             new BB::Group::CopyList[it->second.size() + 1];
 
         chunkData.group = it->first;
+        chunkData.count = it->second.size();
+        chunkData.connected = connected;
         chunkData.copy_list = copy_list;
+        chunkData.timeout = 2.0 * it->first->sampleTime / bbGroup->sampleTime;
 
         rxPdoChunk.push_back(chunkData);
 
         for (RxPdoBuddyList::const_iterator it2 = it->second.begin();
                 it2 != it->second.end(); it2++) {
+            it2->first->srcAddr = &copy_list->src;
+            it2->first->connectedAddr = connected;
+
+            *connected = it2->first->connected;
+
             copy_list->src = it2->second->shmemAddr;
             copy_list->dst = it2->first->addr;
             copy_list->len = it2->first->size();
             log_debug("src=%p dst=%p len=%zu", copy_list->src,
                     copy_list->dst, copy_list->len);
 
+            connected++;
             copy_list++;
         }
 
@@ -129,7 +140,26 @@ void Group::receive () const
     for (RxPdoChunk::const_iterator it = rxPdoChunk.begin();
             it != rxPdoChunk.end(); it++) {
         size_t counter = (*it).group->receive((*it).copy_list);
+        unsigned char **connected = (*it).connected;
+        unsigned char connect = counter - (*it).counter < (*it).timeout;
+        (*it).counter = counter;
 
-        counter = counter;
+        for (size_t n = 0; n < (*it).count; n++)
+            if (connected[n])
+                *connected[n] = connect;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+void Group::setAddr (const RxPdo *pdo, const void *addr) const
+{
+    if (addr) {
+        *pdo->srcAddr = addr;
+        *pdo->connected = 1;
+        *pdo->connectedAddr = 0;
+    }
+    else {
+        *pdo->srcAddr = pdo->addr;
+        *pdo->connectedAddr = pdo->connected;
     }
 }

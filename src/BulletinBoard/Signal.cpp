@@ -33,7 +33,6 @@ Signal::Signal (Group* group, const std::string& name,
     group(group), name(name), dataType(datatype),
     elementCount(n)
 {
-    //sourceAddr = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////

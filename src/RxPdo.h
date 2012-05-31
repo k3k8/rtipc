@@ -30,14 +30,21 @@ namespace BB = BulletinBoard;
 
 namespace RtIPC {
 
+class Group;
+
 class RxPdo: public BB::Signal {
     public:
-        RxPdo(const std::string& name, 
+        RxPdo(const Group*, const std::string& name, 
                 const BB::DataType& datatype, size_t n,
                 void *addr, unsigned char *connected);
 
+        const Group * const group;
         void * const addr;
         unsigned char * const connected;
+
+        const void** srcAddr;
+        unsigned char **connectedAddr;
+
     private:
 };
 

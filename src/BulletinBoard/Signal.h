@@ -41,6 +41,9 @@ class Signal {
         const DataType dataType;
         const size_t elementCount;
 
+        const void*  src;
+        const void** srcAddr;
+
         char *shmemAddr;
 
         size_t size() const;
