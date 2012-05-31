@@ -27,17 +27,78 @@
 
 #ifdef RTIPC_DEBUG
 
-void Debug::Debug (const char *file, const char *func,
-        int line, const char *fmt, ...)
+using namespace Debug;
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+int Log::level = 3;
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+Log::Space::Space(char c): space(c)
 {
-    va_list ap;
-    va_start(ap, fmt);
+}
 
-    fprintf(stderr, "%s:%s(%i): ", file + SRC_PATH_LENGTH, func, line);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+Log::Log(const char *file, const char* func, int line, const Level& level)
+{
+    print = level <= Log::level;
+    space = ' ';
 
-    va_end(ap);
+    if (print) {
+        switch (level) {
+            case Critical:
+                std::cout << "CRIT ";
+                break;
+
+            case Notice:
+                std::cout << "NOTC ";
+                break;
+
+            case Debug:
+                std::cout << "DBG  ";
+                break;
+        }
+
+        std::cout
+            << std::string(file + SRC_PATH_LENGTH)
+            << ':' << func
+            << '(' << line << "):";
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+Log::~Log()
+{
+    if (print)
+        std::cout << std::endl;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+Log& Log::operator<< (const Space& s)
+{
+    space = s.space;
+    return *this;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+void Log::setLevel(int n)
+{
+    level = n;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+bool Log::prefix()
+{
+    if (!print)
+        return false;
+
+    if (space)
+        std::cout << space;
+    space = ' ';
+
+    return true;
 }
 
 #endif //RTIPC_DEBUG

@@ -92,7 +92,7 @@ bool Group::setupRx (BB::Main *main)
     if (signals.empty())
         return false;
 
-    log_debug("signals = %zu %f", signals.size(), bbGroup->sampleTime);
+    log_debug() << "signals =" << signals.size() << bbGroup->sampleTime;
 
     main->openSharedMemory(false);
 
@@ -121,8 +121,10 @@ bool Group::setupRx (BB::Main *main)
             copy_list->src = it2->second->shmemAddr;
             copy_list->dst = it2->first->addr;
             copy_list->len = it2->first->size();
-            log_debug("src=%p dst=%p len=%zu", copy_list->src,
-                    copy_list->dst, copy_list->len);
+            log_debug()
+                << "src" << log_space('=') << copy_list->src
+                << "dst" << log_space('=') << copy_list->dst
+                << "len" << log_space('=') << copy_list->len;
 
             connected++;
             copy_list++;

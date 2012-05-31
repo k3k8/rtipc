@@ -24,19 +24,75 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <iostream>
 #include "config.h"
 
 #ifdef RTIPC_DEBUG
 
+#define log_debug() \
+    Debug::Log(__BASE_FILE__, __func__, __LINE__, Debug::Log::Debug)
+#define log_notice() \
+    Debug::Log(__BASE_FILE__, __func__, __LINE__, Debug::Log::Notice)
+#define log_crit() \
+    Debug::Log(__BASE_FILE__, __func__, __LINE__, Debug::Log::Critical)
+#define log_space(c) Debug::Log::Space(c)
+
 namespace Debug {
-    void Debug(const char *file, const char *func, int line,
-            const char *fmt, ...) __attribute__((format(printf, 4, 5)));
+
+class Log {
+    public:
+        struct Space {
+            Space(char c = 0);
+            const char space;
+        };
+
+        enum Level {Critical, Notice, Debug};
+
+        Log(const char *file, const char* func, int line, const Level& level);
+        ~Log();
+
+        Log& operator<< (const Space& s);
+
+        template<class T>
+            Log& operator<< (const T& d) {
+                if (prefix())
+                    std::cout << d;
+
+                return *this;
+            }
+
+        static void setLevel(int n);
+
+    private:
+        static int level;
+        bool print;
+        char space;
+
+        bool prefix();
+};
+
 }
-#define log_debug(fmt...) Debug::Debug(__BASE_FILE__, __func__, __LINE__, fmt)
 
 #else   // RTIPC_DEBUG
 
-#define log_debug(...)
+namespace {
+
+class NullLog {
+    public:
+        template<class T>
+            NullLog& operator<< (const T&) {
+
+                return *this;
+            }
+
+};
+
+}
+#define log_debug()  NullLog()
+#define log_notice() NullLog()
+#define log_crit() NullLog()
+#define log_space(c...) NullLog()
+
 
 #endif  // RTIPC_DEBUG
 

@@ -148,11 +148,11 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
     // Calculate size of shared memory
     for (Main::Groups::const_iterator it = groups.begin();
             it != groups.end(); ++it) {
-        log_debug("group");
+        log_debug() << "group";
         signalSize += (*it)->getSignalSize();
     }
 
-    log_debug("signalSize=%zu", signalSize);
+    log_debug() << "signalSize" << log_space('=') << signalSize;
     key_t key = ftok(this->lockFile.c_str(),1);
     if (key == -1)
         return errno;
@@ -184,12 +184,12 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
     uint32_t cs = checkSum();
     if (shmflg & IPC_CREAT) {
         // Write checksum
-        log_debug("New IPC segment was created");
+        log_debug() << "New IPC segment was created";
         *checksum = cs;
     }
     else if (*checksum != cs ) {
         // Shared memory existed already. Check that the checksum is valid
-        log_debug("Checksum invalid %u", cs);
+        log_debug() << "Checksum invalid" << cs;
 
         // Remove the shared memory segment
         shmdt(shmaddr);
@@ -204,7 +204,7 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         if (shmid != -1) {
             return -EEXIST;
         }
-        log_debug("Successfully removed segment");
+        log_debug() << "Successfully removed segment";
 
         // Now try to create the segment
         shmflg |= IPC_CREAT;
@@ -212,7 +212,7 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         if (shmid == -1) {
             return -errno;
         }
-        log_debug("Successfully created segment again");
+        log_debug() << "Successfully created segment again";
 
         shmaddr = shmat(shmid, NULL, 0);
         if (shmaddr == (void*)-1) {
@@ -221,8 +221,8 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         *checksum = cs;
     }
 
-    log_debug("size = %s %zu %i %p",
-            this->lockFile.c_str(), signalSize, key, shmaddr);
+    log_debug()
+        << "size" << this->lockFile.c_str() << signalSize << key << shmaddr;
 
     int semflg = S_IRUSR | S_IWUSR;
     semid = semget(key, 0, semflg);
@@ -233,35 +233,30 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
     else if (semctl(semid, 0, IPC_STAT, &semid_ds) == -1)
         return -errno;
 
-    log_debug("size");
     unsigned short nsems = groups.size() + 1;
     struct sembuf sop;
     if (semid_ds.sem_nsems != nsems) {
-        log_debug("size");
         semctl(semid, 0, IPC_RMID);
 
-        log_debug("size");
         semid = semget(key, 0, semflg);
-        log_debug("size %i", semid);
+        log_debug() << "SemId" << semid;
         if (semid != -1)
             return -errno;
 
-        log_debug("size");
         semflg |= IPC_CREAT;
         semid = semget(key, nsems, semflg);
         if (semid == -1)
             return -errno;
 
-        log_debug("size");
         sop.sem_op = 1;
         sop.sem_flg = 0;
         for (sop.sem_num = 0; sop.sem_num < nsems; sop.sem_num++)
-            log_debug("semop %i", semop(semid, &sop, 1));
+            semop(semid, &sop, 1);
     }
 
     size_t *counter = reinterpret_cast<size_t*>(checksum + 1);
     void *addr = counter + groups.size();
-    log_debug("SemId = %i", semid);
+    log_debug() << "SemId" << semid;
     int i = 0;
     for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
         addr = (*it)->prepareIPC(counter++, addr, semid, i++);

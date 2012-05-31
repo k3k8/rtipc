@@ -161,7 +161,7 @@ void Main::verifyConfig (const std::string& confFile)
         }
         catch (const std::exception& e) {
             // Some parsing or config file syntax error occurred
-            log_debug("Configuration file corrupt");
+            log_debug() << "Configuration file corrupt";
         }
     }
 
