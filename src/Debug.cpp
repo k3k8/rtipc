@@ -22,8 +22,6 @@
  *****************************************************************************/
 
 #include "Debug.h"
-#include <stdarg.h>
-#include <cstdio>
 
 #ifdef RTIPC_DEBUG
 
