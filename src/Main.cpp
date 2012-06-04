@@ -62,12 +62,12 @@ struct rtipc_group* rtipc_create_group (
 }
 
 //////////////////////////////////////////////////////////////////////////////
-const struct txpdo* rtipc_txpdo (struct rtipc_group *g, const char *name,
+struct txpdo* rtipc_txpdo (struct rtipc_group *g, const char *name,
         enum rtipc_datatype_t datatype, const void *addr, size_t n)
 {
     Group *group = reinterpret_cast<RtIPC::Group*>(g);
 
-    return (const struct txpdo*)group->addTxPdo(name, datatype, addr, n);
+    return (struct txpdo*)group->addTxPdo(name, datatype, addr, n);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -78,13 +78,13 @@ void rtipc_set_txpdo_addr (const struct txpdo* pdo, const void *addr)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-const struct rxpdo* rtipc_rxpdo (struct rtipc_group *g,
+struct rxpdo* rtipc_rxpdo (struct rtipc_group *g,
         const char *name, enum rtipc_datatype_t datatype,
         void *addr, size_t n, unsigned char *connected)
 {
     Group *group = reinterpret_cast<RtIPC::Group*>(g);
     const RxPdo* pdo = group->addRxPdo(name, datatype, addr, n, connected);
-    return (const struct rxpdo*)pdo;
+    return (struct rxpdo*)pdo;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -151,11 +151,13 @@ Group* Main::addGroup (double sampleTime)
 //////////////////////////////////////////////////////////////////////////////
 void Main::verifyConfig (const std::string& confFile)
 {
+    log_debug() << "Verify compatable";
     if (!::access(confFile.c_str(), F_OK)) {
         // Config file exists. Load it
         try {
             BulletinBoard::Main bb(confFile);
 
+            log_debug() << "Testing compatability to" << confFile;
             if (compatible(bb))
                 return;
         }
@@ -165,6 +167,7 @@ void Main::verifyConfig (const std::string& confFile)
         }
     }
 
+    log_debug() << confFile << "is not compatable. saving";
     save(confFile);
 }
 
@@ -185,8 +188,6 @@ int Main::start ()
     size_t begin = name.rfind('/');
     begin = begin == std::string::npos ? 0 : (begin + 1);
     std::string confFile = confDir + name.substr(begin) + ".conf";
-
-    save(confFile);
 
     verifyConfig(confFile);
 

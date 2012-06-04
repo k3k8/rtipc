@@ -42,8 +42,10 @@ class RxPdo: public BB::Signal {
         void * const addr;
         unsigned char * const connected;
 
-        const void** srcAddr;
-        unsigned char **connectedAddr;
+        // Management variables needed when connected
+        const void* shmemAddr;
+        const void** copyListSrcPtr;
+        unsigned char **copyListConnectedPtr;
 
     private:
 };

@@ -61,6 +61,8 @@ const RxPdo* Group::addRxPdo (const std::string &name,
         unsigned char *connected)
 {
     rxPdo.push_back(new RxPdo(this, name, datatype, n, addr, connected));
+    log_debug() << "Added RxPdo" << name << "to group"
+        << this << bbGroup << bbGroup->sampleTime;
     return *rxPdo.rbegin();
 }
 
@@ -113,8 +115,9 @@ bool Group::setupRx (BB::Main *main)
 
         for (RxPdoBuddyList::const_iterator it2 = it->second.begin();
                 it2 != it->second.end(); it2++) {
-            it2->first->srcAddr = &copy_list->src;
-            it2->first->connectedAddr = connected;
+            it2->first->copyListSrcPtr = &copy_list->src;
+            it2->first->copyListConnectedPtr = connected;
+            it2->first->shmemAddr = it2->second->shmemAddr;
 
             *connected = it2->first->connected;
 
@@ -122,6 +125,7 @@ bool Group::setupRx (BB::Main *main)
             copy_list->dst = it2->first->addr;
             copy_list->len = it2->first->size();
             log_debug()
+                << it2->first->name
                 << "src" << log_space('=') << copy_list->src
                 << "dst" << log_space('=') << copy_list->dst
                 << "len" << log_space('=') << copy_list->len;
@@ -141,14 +145,26 @@ void Group::receive () const
 {
     for (RxPdoChunk::const_iterator it = rxPdoChunk.begin();
             it != rxPdoChunk.end(); it++) {
-        size_t counter = (*it).group->receive((*it).copy_list);
-        unsigned char **connected = (*it).connected;
-        unsigned char connect = counter - (*it).counter < (*it).timeout;
-        (*it).counter = counter;
+        const struct ChunkData& chunk = *it;
+        size_t srcCounter = chunk.group->receive(chunk.copy_list);
 
-        for (size_t n = 0; n < (*it).count; n++)
-            if (connected[n])
-                *connected[n] = connect;
+        unsigned char connect;
+        if (chunk.srcCounter == srcCounter) {
+            connect = (int)(chunk.timer++ - srcCounter) < chunk.timeout;
+        }
+        else {
+            chunk.srcCounter = srcCounter;
+            chunk.timer = srcCounter;
+            connect = 1;
+        }
+
+        unsigned char **connected = chunk.connected;
+        size_t n = chunk.count;
+        while (n--) {
+            unsigned char *c = *connected++;
+            if (c)
+                *c = connect;
+        }
     }
 }
 
@@ -156,12 +172,12 @@ void Group::receive () const
 void Group::setAddr (const RxPdo *pdo, const void *addr) const
 {
     if (addr) {
-        *pdo->srcAddr = addr;
+        *pdo->copyListSrcPtr = addr;
         *pdo->connected = 1;
-        *pdo->connectedAddr = 0;
+        *pdo->copyListConnectedPtr = 0;
     }
     else {
-        *pdo->srcAddr = pdo->addr;
-        *pdo->connectedAddr = pdo->connected;
+        *pdo->copyListSrcPtr = pdo->shmemAddr;
+        *pdo->copyListConnectedPtr = pdo->connected;
     }
 }

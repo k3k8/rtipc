@@ -76,7 +76,7 @@ struct rtipc_group* rtipc_create_group(
  * is called
  *
  */
-const struct txpdo* rtipc_txpdo(
+struct txpdo* rtipc_txpdo(
         struct rtipc_group *group,
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */
@@ -95,7 +95,7 @@ void rtipc_set_txpdo_addr(
  * properties
  *
  */
-const struct rxpdo* rtipc_rxpdo(
+struct rxpdo* rtipc_rxpdo(
         struct rtipc_group *group,
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */

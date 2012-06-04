@@ -39,6 +39,7 @@ Group::Group (Main *main, double ts):
     copy_list = 0;
     signalSize = 0;
     sem = 0;
+    log_debug() << "New Group to main" << main << sampleTime << this;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -59,6 +60,7 @@ const Signal* Group::newSignal (const std::string &name,
     signals[name] = s;
     signalSize += s->size();
 
+    log_debug() << "Added signal" << name << n << "to" << sampleTime << this;
     return s;
 }
 
@@ -97,7 +99,7 @@ void Group::copy(const Group *other)
 /////////////////////////////////////////////////////////////////////////////
 uint32_t Group::checkSum() const
 {
-    if (signals.empty())
+    if (empty())
         return 0;
 
     MHASH td;
@@ -156,8 +158,12 @@ bool Group::operator> (const Group& other) const
 /////////////////////////////////////////////////////////////////////////////
 void *Group::prepareIPC (size_t *counter, void *addr, int semid, int instance)
 {
+    log_debug() << this;
+
     char *shmemAddr = reinterpret_cast<char*>(addr);
     sem = new Semaphore(semid, instance);
+
+    log_debug() << sampleTime << sem;
 
     for (SignalMap::const_iterator it = signals.begin();
             it != signals.end(); it++) {
@@ -180,6 +186,9 @@ void Group::setAddr (const Signal *s, const void* addr) const
 /////////////////////////////////////////////////////////////////////////////
 void Group::setupTx (const PdoMap& txPdoData)
 {
+    if (empty())
+        return;
+
     copy_list = new CopyList[signals.size() + 1];
     CopyList *cl = copy_list;
 
@@ -206,6 +215,7 @@ void Group::setupTx (const PdoMap& txPdoData)
 //////////////////////////////////////////////////////////////////////////////
 void Group::transmit () const
 {
+    //log_debug() << this << "cl=" << copy_list << "sem=" << sem;
     if (!copy_list)
         return;
 
@@ -221,6 +231,8 @@ void Group::transmit () const
 //////////////////////////////////////////////////////////////////////////////
 size_t Group::receive (const CopyList* copy_list) const
 {
+    //log_debug() << this << "cl=" << copy_list << "sem=" << sem;
+
     SemaphoreLock lock(sem);
     for (const CopyList *cl = copy_list; cl->src; cl++) {
         ::memcpy(cl->dst, cl->src, cl->len);

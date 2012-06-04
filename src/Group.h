@@ -68,8 +68,9 @@ class Group {
 
         struct ChunkData {
             const BB::Group *group;
-            size_t timeout;
-            mutable size_t counter;
+            int timeout;
+            mutable size_t srcCounter;
+            mutable size_t timer;
             size_t count;
             unsigned char **connected;
             BulletinBoard::Group::CopyList *copy_list;
