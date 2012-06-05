@@ -46,7 +46,8 @@ The library has a relatively simple interface:
 
 7) When finished, optionally call rtipc_exit()
 
-That is it.
+That is it. For more details, see the header file rtipc.h or the test
+application in test/
 
 No, not quite, as you might have suspected. There are some subtle aspects to
 point out.

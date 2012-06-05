@@ -58,69 +58,134 @@ struct rtipc_group;
  *      pointer to struct rtipc on success
  */
 struct rtipc* rtipc_create(
-        const char *name,       /**< Name of the process */
-        const char *cache_dir   /**< Path to a writeable directory for cache */
+        const char *name,       /**< Name of the process. The configuration
+                                 * file will be called <name>.conf */
+        const char *cache_dir   /**< Path to a writeable directory for
+                                 * the bulletin board */
         );
 
+/** Create a signal group
+ *
+ * Every signal, be it export or import, is organized in a group. Create for
+ * every sample time one group.
+ *
+ * returns:
+ *      NULL on error
+ *      pointer to struct rtipc_group on success
+ */
 struct rtipc_group* rtipc_create_group(
         struct rtipc* rtipc,    /**< Pointer to rtipc structure */
-        double sample_time      /**< Optional sample time */
+        double sample_time      /**< Group sample time. The sample time is
+                                 * used to determine whether a signal
+                                 * is connected */
         );
 
-/** Register an IPC signal
+/** Register an IPC signal to be exported
  *
- * This call registers a process output signal which is exported to other
+ * This call registers a process output (Tx) signal which is exported to other
  * rtipc processes via shared memory (aka IPC).
  *
  * The signals are copied to shared memory from the task when rtipc_update()
  * is called
  *
+ * returns:
+ *      txpdo structure. NULL on error, e.g. when the name is repeated.
  */
 struct txpdo* rtipc_txpdo(
-        struct rtipc_group *group,
-        const char *name,         /**< Signal's name */
+        struct rtipc_group *group,/**< Pointer to rtipc group */
+        const char *name,         /**< Signal's global name. The name should
+                                   * be unique over ALL applications */
         enum rtipc_datatype_t datatype, /**< Signal data type */
-        const void *addr,         /**< Signal address */
+        const void *addr,         /**< Signal source address */
         size_t n                  /**< Element count. */
         );
 
+/** Temporarily redirect the output signal's source address
+ *
+ * Use this function to rewrite the source @addr of a signal passed in the
+ * call to @rtipc_txpdo(). This is useful to change the source of a signal
+ * while the application is running, e.g. for testing purposes.
+ *
+ * To reset the source address to its original value, call this function
+ * with @addr set to NULL.
+ *
+ * NOTE: This function may be only be called after @rtipc_prepare().
+ */
 void rtipc_set_txpdo_addr(
-        const struct txpdo*,
-        const void *addr          /**< Signal address */
+        const struct txpdo*,    /**< Pointer to a TxPdo */
+        const void *addr        /**< Signal source address. NULL will use
+                                 * original @addr passed when calling
+                                 * @rtipc_txpdo() */
         );
 
-/** Find an IPC signal
+/** Find an exported IPC signal
  *
  * This call attempts to find a exported IPC signal with the respective
  * properties
  *
+ * returns:
+ *      rxpdo structure.
  */
 struct rxpdo* rtipc_rxpdo(
-        struct rtipc_group *group,
+        struct rtipc_group *group,/**< Pointer to rtipc group */
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */
-        void *addr,               /**< Signal address */
+        void *addr,               /**< Signal destination address */
         size_t n,                 /**< Element count. */
         unsigned char *connected  /**< Connected status */
         );
 
+/** Temporarily redirect a the signal's source.
+ *
+ * When a input signal is connected, the source address points to a region
+ * in shared memory. This function can be used let the source address
+ * temporarily point to another region inside the application for testing
+ * purposes.
+ *
+ * This call can even be used on signals that are unconnected.
+ *
+ * To reset the source address to shared memory, call this function
+ * with @addr set to NULL.
+ *
+ * NOTE: This function may be only be called after @rtipc_prepare().
+ */
 void rtipc_set_rxpdo_addr(
-        const struct rxpdo*,
-        const void *addr          /**< Signal address */
+        const struct rxpdo*,    /**< rxpdo structure */
+        const void *addr        /**< Signal address */
         );
 
+/** Setup library structures
+ *
+ * Call this function when all signals are registered so that the library
+ * can set up its internal structures. After this call, no more signals can
+ * be registered.
+ *
+ * returns:
+ *      0 success
+ *      error code on error
+ */
 int rtipc_prepare(
         struct rtipc* rtipc     /**< Pointer to rtipc structure */
         );
 
+/** Send output variables
+ *
+ * Use only after calling @rtipc_prepare()
+ */
 void rtipc_tx(
-        struct rtipc_group *group
+        struct rtipc_group *group /**< Pointer to group structure */
         );
 
+/** Receive input variables
+ *
+ * Use only after calling @rtipc_prepare()
+ */
 void rtipc_rx(
-        struct rtipc_group *group
+        struct rtipc_group *group /**< Pointer to group structure */
         );
 
+/** Cleanup library
+ */
 void rtipc_exit(
         struct rtipc* rtipc     /**< Pointer to rtipc structure */
         );
