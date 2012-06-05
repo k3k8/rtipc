@@ -1,0 +1,93 @@
+=============================================================================
+Real Time IPC Library.
+
+Copyright (C) 2012, Richard Hacker
+
+ *  The rtipc library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published
+ *  by the Free Software Foundation, either version 3 of the License, or (at
+ *  your option) any later version.
+ *
+ *  The rtipc library is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ *  License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with the rtipc library. If not, see <http://www.gnu.org/licenses/>.
+
+=============================================================================
+
+This is a library that allows unrelated processes to exchange variables via
+shared memory.  Typically, this library is used to communicate between
+processes that implement different aspects of a control application.
+
+An application exports named variables to shared memory. Similarly, it imports
+named variables, which are read from shared memory. If all attributes are
+correct (element count and data type), these are connected and data is
+exchanged. Semaphores protect access to the shared memory areas.
+
+The library has a relatively simple interface:
+1) open a handle to the library using rtipc_create()
+2) create one or more groups using rtipc_create_group()
+3) register input and output variables using rtipc_txpdo() and rtipc_rxpdo()
+
+*** At this stage, the user could call mlockall() to lock subsequent memory
+*** so that it is not swapped any more. The library itself does not rely 
+*** on this, however.
+
+4) let the library setup its internal structures using rtipc_prepare()
+
+*** Now the user is ready for the cyclic part
+
+5) read all input variables from shared memory using rtipc_rx()
+6) after calculation, write all output variables to shared memory using
+        rtipc_tx(), repeat with step 5
+
+7) When finished, optionally call rtipc_exit()
+
+That is it.
+
+No, not quite, as you might have suspected. There are some subtle aspects to
+point out.
+1) Chicken-egg-problem. What happens when one application exports variables
+   required by a second application, which in turn exports variables required
+   by the first?
+
+   Well, when an application starts, it creates a configuration file with all
+   its exported variables in a bulletin board directory /opt/etherlab/etc/rtipc.
+   Thus applications require write access to this directory.
+
+   If an input variable does not exist at the time the application is started,
+   start the second application after the first. This sets up the
+   configuration file with its exported variables. Now restart the first
+   application and the variables will be connected.
+
+   Once the configuration file has been created, an application importing
+   variables from another is capable opening all the required shared memory
+   segments and semaphores in its name. When the other application starts, it
+   will see that all the required structures are already in place and uses
+   them if the configuration file is compatible with its own configuration.
+   That is, when the own configuration is a subset of those in the
+   configuration file, all other attributes being equal.
+
+   If the configuration file is incompatible, it is updated, the shared memory
+   segments and semaphores are removed and setup again. Other applications
+   using variables exported by this application have to be restarted.
+
+2) This raises the issue of who manages the shared memory and semaphores. The
+   simple answer is: you!
+   
+   The shared memory and semaphores have to exist even after the application
+   exits, preventing segmentation violations in other applications. There is
+   no way to figure out reliably how many applications use these data
+   structures.
+
+   The amount of memory required is usually not much and are recycled every
+   time. If you are offended, remove them by hand using
+   -) ipcs
+   -) ipcrm -m <shm key>
+   -) ipcrm -s <sem key>
+
+3) From time to time, cleanup the files in the bulletin board directory
+   /opt/etherlab/etc/rtipc

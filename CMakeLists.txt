@@ -4,8 +4,7 @@
 #
 #  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
 #
-#  This is the main cmake file for PdServ target for Real-Time Workshop(TM)
-#  taget of Mathworks.
+#  This is the main cmake file for the rtipc package
 #
 #  The following options can be specified on the command line of cmake to
 #  change the installation paths (Defaults are in <>)
@@ -15,20 +14,20 @@
 #       -DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo|MinSizeRel
 #  option
 #
-#  This file is part of the PdServ-MATLAB package.
+#  This file is part of the rtipc package.
 #
-#  PdServ-MATLAB is free software: you can redistribute it and/or modify
+#  rtipc is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #
-#  PdServ-MATLAB is distributed in the hope that it will be useful,
+#  rtipc is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with PdServ-MATLAB. See COPYING. If not, see
+#  along with rtipc. See COPYING. If not, see
 #  <http://www.gnu.org/licenses/>.
 #
 #############################################################################
