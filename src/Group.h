@@ -69,14 +69,14 @@ class Group {
         struct ChunkData {
             const BB::Group *group;
             int timeout;
-            mutable size_t srcCounter;
-            mutable size_t timer;
+            size_t srcCounter;
+            size_t timer;
             size_t count;
             unsigned char **connected;
             BulletinBoard::Group::CopyList *copy_list;
         };
 
-        typedef std::list<ChunkData> RxPdoChunk;
+        typedef std::list<ChunkData*> RxPdoChunk;
         RxPdoChunk rxPdoChunk;
 };
 

@@ -39,6 +39,14 @@ Group::Group (Main *main, BulletinBoard::Group *group):
 /////////////////////////////////////////////////////////////////////////////
 Group::~Group ()
 {
+    for (RxPdoChunk::iterator it = rxPdoChunk.begin();
+            it != rxPdoChunk.end(); it++) {
+        delete (*it)->copy_list;
+        delete *it;
+    }
+
+    for (RxPdoList::iterator it = rxPdo.begin(); it != rxPdo.end(); it++)
+        delete *it;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -100,16 +108,16 @@ bool Group::setupRx (BB::Main *main)
 
     for (RxPdoMap::const_iterator it = signals.begin();
             it != signals.end(); it++) {
-        ChunkData chunkData;
+        ChunkData *chunkData = new ChunkData;
         unsigned char **connected = new unsigned char*[it->second.size() + 1];
         BB::Group::CopyList *copy_list =
             new BB::Group::CopyList[it->second.size() + 1];
 
-        chunkData.group = it->first;
-        chunkData.count = it->second.size();
-        chunkData.connected = connected;
-        chunkData.copy_list = copy_list;
-        chunkData.timeout = 2.0 * it->first->sampleTime / bbGroup->sampleTime;
+        chunkData->group = it->first;
+        chunkData->count = it->second.size();
+        chunkData->connected = connected;
+        chunkData->copy_list = copy_list;
+        chunkData->timeout = 2.0 * it->first->sampleTime / bbGroup->sampleTime;
 
         rxPdoChunk.push_back(chunkData);
 
@@ -145,21 +153,21 @@ void Group::receive () const
 {
     for (RxPdoChunk::const_iterator it = rxPdoChunk.begin();
             it != rxPdoChunk.end(); it++) {
-        const struct ChunkData& chunk = *it;
-        size_t srcCounter = chunk.group->receive(chunk.copy_list);
+        struct ChunkData *chunk = *it;
+        size_t srcCounter = chunk->group->receive(chunk->copy_list);
 
         unsigned char connect;
-        if (chunk.srcCounter == srcCounter) {
-            connect = (int)(chunk.timer++ - srcCounter) < chunk.timeout;
+        if (chunk->srcCounter == srcCounter) {
+            connect = (int)(chunk->timer++ - srcCounter) < chunk->timeout;
         }
         else {
-            chunk.srcCounter = srcCounter;
-            chunk.timer = srcCounter;
+            chunk->srcCounter = srcCounter;
+            chunk->timer = srcCounter;
             connect = 1;
         }
 
-        unsigned char **connected = chunk.connected;
-        size_t n = chunk.count;
+        unsigned char **connected = chunk->connected;
+        size_t n = chunk->count;
         while (n--) {
             unsigned char *c = *connected++;
             if (c)

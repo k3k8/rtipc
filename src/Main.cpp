@@ -138,6 +138,9 @@ Main::~Main ()
     for (Applications::iterator it = applications.begin();
             it != applications.end(); it++)
         delete *it;
+
+    for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
+        delete *it;
 }
 
 //////////////////////////////////////////////////////////////////////////////
