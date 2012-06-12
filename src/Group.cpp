@@ -34,6 +34,8 @@ using namespace RtIPC;
 Group::Group (Main *main, BulletinBoard::Group *group):
     main(main), bbGroup(group)
 {
+    copy_list = 0;
+    disconnectedCount = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -47,6 +49,8 @@ Group::~Group ()
 
     for (RxPdoList::iterator it = rxPdo.begin(); it != rxPdo.end(); it++)
         delete *it;
+
+    delete copy_list;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,10 +72,18 @@ const RxPdo* Group::addRxPdo (const std::string &name,
         const BB::DataType& datatype, void *addr, size_t n,
         unsigned char *connected)
 {
-    rxPdo.push_back(new RxPdo(this, name, datatype, n, addr, connected));
+    RxPdo *pdo = new RxPdo(this, name, datatype, n, addr, connected);
+    rxPdo.push_back(pdo);
+
+    pdo->shmemAddr = 0;
+    pdo->copyListSrcPtr = 0;
+
+    disconnectedCount++;
+
     log_debug() << "Added RxPdo" << name << "to group"
         << this << bbGroup << bbGroup->sampleTime;
-    return *rxPdo.rbegin();
+
+    return pdo;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -83,6 +95,25 @@ void Group::setupTx ()
 ////////////////////////////////////////////////////////////////////////////
 bool Group::setupRx (BB::Main *main)
 {
+    if (!main) {
+        // Finish setting up Rx. Make a local list of rxpdo's
+        copy_list = new struct copy_list[disconnectedCount + 1];
+
+        struct copy_list *cl = copy_list;
+        for (RxPdoList::iterator it = rxPdo.begin(); it != rxPdo.end(); it++) {
+            if (!(*it)->shmemAddr) {
+                cl->dst = (*it)->addr;
+                cl->src = 0;
+                cl->len = (*it)->size();
+
+                (*it)->copyListSrcPtr = &cl->src;
+            }
+        }
+        cl->dst = 0;
+
+        return 0;
+    }
+
     const BB::Main::SignalMap& signalMap = main->getSignalMap();
 
     typedef std::pair<RxPdo*, const BB::Signal*> RxPdoBuddy;
@@ -138,6 +169,7 @@ bool Group::setupRx (BB::Main *main)
                 << "dst" << log_space('=') << copy_list->dst
                 << "len" << log_space('=') << copy_list->len;
 
+            disconnectedCount--;
             connected++;
             copy_list++;
         }
@@ -174,6 +206,14 @@ void Group::receive () const
                 *c = connect;
         }
     }
+
+    if (!copy_list)
+        return;
+
+    for (struct copy_list *cl = copy_list; cl->dst; cl++) {
+        if (cl->src)
+            ::memcpy(cl->dst, cl->src, cl->len);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -182,10 +222,16 @@ void Group::setAddr (const RxPdo *pdo, const void *addr) const
     if (addr) {
         *pdo->copyListSrcPtr = addr;
         *pdo->connected = 1;
-        *pdo->copyListConnectedPtr = 0;
+
+        if (pdo->copyListConnectedPtr)
+            *pdo->copyListConnectedPtr = 0;
     }
     else {
         *pdo->copyListSrcPtr = pdo->shmemAddr;
-        *pdo->copyListConnectedPtr = pdo->connected;
+
+        if (pdo->copyListConnectedPtr)
+            *pdo->copyListConnectedPtr = pdo->connected;
+        else
+            *pdo->connected = 0;
     }
 }

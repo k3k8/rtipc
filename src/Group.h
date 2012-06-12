@@ -78,6 +78,16 @@ class Group {
 
         typedef std::list<ChunkData*> RxPdoChunk;
         RxPdoChunk rxPdoChunk;
+
+        size_t disconnectedCount;
+
+        struct copy_list {
+            const void *src;
+            void *dst;
+            size_t len;
+        };
+
+        struct copy_list* copy_list;
 };
 
 }

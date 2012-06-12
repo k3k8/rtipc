@@ -234,5 +234,8 @@ int Main::start ()
     }
     delete bb;
 
+    for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
+        (*it)->setupRx(0);
+
     return 0;
 }
