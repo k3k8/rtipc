@@ -36,6 +36,9 @@ Group::Group (Main *main, BulletinBoard::Group *group):
 {
     copy_list = 0;
     disconnectedCount = 0;
+
+    log_notice() << "New group" << this << "to main" << main
+        << "Ts" << log_space('=') << bbGroup->sampleTime;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -51,6 +54,8 @@ Group::~Group ()
         delete *it;
 
     delete copy_list;
+
+    log_notice() << "Finished group" << this;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -64,6 +69,9 @@ const BB::Signal* Group::addTxPdo (const std::string &name,
 
     txPdoData[s] = addr;
 
+    log_notice() << "Added TxPdo" << name
+        << datatype.c_str() << log_space('[') << n << log_space(']')
+        << " to" << this;
     return s;
 }
 
@@ -80,8 +88,9 @@ const RxPdo* Group::addRxPdo (const std::string &name,
 
     disconnectedCount++;
 
-    log_debug() << "Added RxPdo" << name << "to group"
-        << this << bbGroup << bbGroup->sampleTime;
+    log_notice() << "Added RxPdo" << name
+        << pdo->dataType.c_str() << log_space('[') << n << log_space(']')
+        << " to" << this;
 
     return pdo;
 }
@@ -96,12 +105,20 @@ void Group::setupTx ()
 bool Group::setupRx (BB::Main *main)
 {
     if (!main) {
+        if (!disconnectedCount)
+            return false;
+
+        log_notice() << disconnectedCount
+            << "signals not found in group" << this;
+
         // Finish setting up Rx. Make a local list of rxpdo's
         copy_list = new struct copy_list[disconnectedCount + 1];
 
         struct copy_list *cl = copy_list;
         for (RxPdoList::iterator it = rxPdo.begin(); it != rxPdo.end(); it++) {
             if (!(*it)->shmemAddr) {
+                log_notice() << "    " << (*it)->name;
+
                 cl->dst = (*it)->addr;
                 cl->src = 0;
                 cl->len = (*it)->size();
@@ -139,21 +156,29 @@ bool Group::setupRx (BB::Main *main)
 
     for (RxPdoMap::const_iterator it = signals.begin();
             it != signals.end(); it++) {
+        size_t signalCount = it->second.size();
         ChunkData *chunkData = new ChunkData;
-        unsigned char **connected = new unsigned char*[it->second.size() + 1];
+        unsigned char **connected = new unsigned char*[signalCount + 1];
         BB::Group::CopyList *copy_list =
-            new BB::Group::CopyList[it->second.size() + 1];
+            new BB::Group::CopyList[signalCount + 1];
 
         chunkData->group = it->first;
-        chunkData->count = it->second.size();
+        chunkData->count = signalCount;
         chunkData->connected = connected;
         chunkData->copy_list = copy_list;
         chunkData->timeout = 2.0 * it->first->sampleTime / bbGroup->sampleTime;
 
         rxPdoChunk.push_back(chunkData);
 
+        log_notice() << "Connecting" << signalCount
+            << "signals in" << this
+            << "in foreign group Ts" << log_space('=') << it->first->sampleTime;
+
         for (RxPdoBuddyList::const_iterator it2 = it->second.begin();
                 it2 != it->second.end(); it2++) {
+
+            log_notice() << "   " << it2->first->name;
+
             it2->first->copyListSrcPtr = &copy_list->src;
             it2->first->copyListConnectedPtr = connected;
             it2->first->shmemAddr = it2->second->shmemAddr;

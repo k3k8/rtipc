@@ -134,6 +134,7 @@ uint32_t Main::checkSum () const
 //////////////////////////////////////////////////////////////////////////////
 int Main::openSharedMemory (bool exclusive, const std::string& lf)
 {
+    // Return if shared memory exists
     if (shmaddr)
         return 0;
 
@@ -154,42 +155,57 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
 
     log_debug() << "signalSize" << log_space('=') << signalSize;
     key_t key = ftok(this->lockFile.c_str(),1);
-    if (key == -1)
+    if (key == -1) {
+        log_crit() << "Could not generate IPC key on" << lockFile
+            << ':' << strerror(errno);
         return errno;
+    }
 
     // First try to get the shm without creating
     int shmflg = S_IRUSR | S_IWUSR;
     shmid = shmget(key, 0, shmflg);
-    if (shmid == -1 and errno == ENOENT) {
+    if (shmid == -1) {
+        if (errno != ENOENT) {
+            log_crit() << "Could not obtain shared memory with key" << key
+                << log_space(':') << ' ' << strerror(errno);
+            return -errno;
+        }
+
         // Shared memory does not exist, create it
         shmflg |= IPC_CREAT;
         shmid = shmget(key, signalSize, shmflg);
+        log_notice() << "New shared memory" << shmid << "size" << signalSize;
 
         // Remove possible semaphores
         semid = semget(key, 0, S_IRUSR | S_IWUSR);
-        if (semid != -1)
+        if (semid != -1) {
+            log_notice() << "Removing semaphore" << semid
+                << "due to new shared memory";
             if (semctl(semid, 0, IPC_RMID))
                 return -errno;
+        }
     }
-
-    if (shmid == -1)
-        return -errno;
+    else
+        log_notice() << "Using existing shared memory" << shmid;
 
     shmaddr = shmat(shmid, NULL, 0);
-    if (shmaddr == (void*)-1)
+    if (shmaddr == (void*)-1) {
+        log_crit() << "Could not attach to shared memory:" << strerror(errno);
         return -errno;
+    }
 
     uint32_t *checksum = reinterpret_cast<uint32_t*>(shmaddr);
 
     uint32_t cs = checkSum();
     if (shmflg & IPC_CREAT) {
+        std::fill_n(reinterpret_cast<char*>(shmaddr), signalSize, '\0');
+
         // Write checksum
-        log_debug() << "New IPC segment was created";
         *checksum = cs;
     }
     else if (*checksum != cs ) {
         // Shared memory existed already. Check that the checksum is valid
-        log_debug() << "Checksum invalid" << cs;
+        log_notice() << "Shared memory checksum is invalid. Recreating...";
 
         // Remove the shared memory segment
         shmdt(shmaddr);
@@ -202,6 +218,7 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         // the segment was not removed successfully.
         shmid = shmget(key, 0, shmflg);
         if (shmid != -1) {
+            log_crit() << "Could not remove shared memory" << key;
             return -EEXIST;
         }
         log_debug() << "Successfully removed segment";
@@ -210,14 +227,20 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         shmflg |= IPC_CREAT;
         shmid = shmget(key, signalSize, shmflg);
         if (shmid == -1) {
+            log_crit() << "Could not create shared memory:" << strerror(errno);
             return -errno;
         }
         log_debug() << "Successfully created segment again";
 
         shmaddr = shmat(shmid, NULL, 0);
         if (shmaddr == (void*)-1) {
+            log_crit() << "Could not attach to shared memory" << key
+                << log_space(':') << ' ' << strerror(errno);
             return -errno;
         }
+
+        std::fill_n(reinterpret_cast<char*>(shmaddr), signalSize, '\0');
+
         *checksum = cs;
     }
 
@@ -230,8 +253,13 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
     struct semid_ds semid_ds;
     if (semid == -1 or shmflg & IPC_CREAT)
         semid_ds.sem_nsems = 0;
-    else if (semctl(semid, 0, IPC_STAT, &semid_ds) == -1)
+    else if (semctl(semid, 0, IPC_STAT, &semid_ds) == -1) {
+        log_crit() << "Could not stat semaphore" << semid
+            << log_space(':') << ' ' << strerror(errno);
         return -errno;
+    }
+    else
+        log_notice() << "Using existing semaphore" << semid;
 
     unsigned short nsems = groups.size() + 1;
     struct sembuf sop;
@@ -240,18 +268,30 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
 
         semid = semget(key, 0, semflg);
         log_debug() << "SemId" << semid;
-        if (semid != -1)
+        if (semid != -1) {
+            log_crit() << "Could not remove semaphore" << semid;
             return -errno;
+        }
 
         semflg |= IPC_CREAT;
         semid = semget(key, nsems, semflg);
-        if (semid == -1)
+        if (semid == -1) {
+            log_crit() << "Could not obtain semaphore" << key
+                << log_space(':') << ' ' << strerror(errno);
             return -errno;
+        }
 
         sop.sem_op = 1;
         sop.sem_flg = 0;
-        for (sop.sem_num = 0; sop.sem_num < nsems; sop.sem_num++)
-            semop(semid, &sop, 1);
+        for (sop.sem_num = 0; sop.sem_num < nsems; sop.sem_num++) {
+            if (semop(semid, &sop, 1)) {
+                log_crit() << "Could not initialize semaphore value" << semid
+                    << log_space(':') << ' ' << strerror(errno);
+                return -errno;
+            }
+        }
+
+        log_notice() << "New semaphore n" << log_space('=') << nsems << semid;
     }
 
     size_t *counter = reinterpret_cast<size_t*>(checksum + 1);
@@ -262,10 +302,19 @@ int Main::openSharedMemory (bool exclusive, const std::string& lf)
         addr = (*it)->prepareIPC(counter++, addr, semid, i++);
 
     // Try getting a lock when exclusive is set
-    sop.sem_op = -1;
-    sop.sem_num = nsems - 1;
-    sop.sem_flg = SEM_UNDO | IPC_NOWAIT;
-    return exclusive and semop(semid, &sop, 1) ? errno : 0;
+    if (exclusive) {
+        sop.sem_op = -1;
+        sop.sem_num = nsems - 1;
+        sop.sem_flg = SEM_UNDO | IPC_NOWAIT;
+
+        if (semop(semid, &sop, 1)) {
+            log_crit() << "Exclusive lock protecting shared memory"
+                " could not be obtained.";
+            return -EBUSY;
+        }
+    }
+
+    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////

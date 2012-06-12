@@ -121,8 +121,10 @@ void rtipc_exit (struct rtipc* rtipc)
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 Main::Main (const std::string &name, const std::string &cache_dir):
-    name(name)
+    name(name, name.rfind('/') + 1)
 {
+    log_level(1);
+
     confDir = cache_dir.empty() ?  QUOTE(SYSCONFDIR) "/rtipc" : cache_dir;
     if (*confDir.rbegin() != '/')
         confDir.append(1,'/');
@@ -130,6 +132,9 @@ Main::Main (const std::string &name, const std::string &cache_dir):
     if (::access(confDir.c_str(), R_OK))
         throw std::runtime_error(
                 std::string("No access to directory ").append(confDir));
+
+    log_notice() << "New RtIPC" << this << this->name
+        << "Cache" << log_space(':') << confDir;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -141,6 +146,8 @@ Main::~Main ()
 
     for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
         delete *it;
+
+    log_notice() << "Finished RtIPC" << this << name;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -160,17 +167,18 @@ void Main::verifyConfig (const std::string& confFile)
         try {
             BulletinBoard::Main bb(confFile);
 
-            log_debug() << "Testing compatability to" << confFile;
-            if (compatible(bb))
+            if (compatible(bb)) {
+                log_notice() << "No signal changes to" << confFile;
                 return;
+            }
         }
         catch (const std::exception& e) {
             // Some parsing or config file syntax error occurred
-            log_debug() << "Configuration file corrupt";
+            log_crit() << "Configuration file corrupt:" << e.what();
         }
     }
 
-    log_debug() << confFile << "is not compatable. saving";
+    log_notice() << "Signal configuration has changed. Saving...";
     save(confFile);
 }
 
@@ -188,6 +196,8 @@ bool Main::setupRx (BB::Main *bb)
 /////////////////////////////////////////////////////////////////////////////
 int Main::start ()
 {
+    log_notice() << "========= Finished variable registration ==========";
+
     size_t begin = name.rfind('/');
     begin = begin == std::string::npos ? 0 : (begin + 1);
     std::string confFile = confDir + name.substr(begin) + ".conf";
@@ -204,6 +214,9 @@ int Main::start ()
 
     // Connect to signals inside the application itself
     setupRx(this);
+
+    log_notice()
+        << "========= Looking for signals in other applications ==========";
 
     DIR *dirp = opendir(confDir.c_str());
     BB::Main *bb = 0;
@@ -227,12 +240,18 @@ int Main::start ()
 
         bb->load(f);
 
+        log_notice() << "Loading RtIPC" << f;
+
         if (setupRx(bb)) {
             applications.push_back(bb);
             bb = 0;
         }
+        else
+            log_notice() << "     not required";
     }
     delete bb;
+
+    log_notice() << "========= Finalizing ==========";
 
     for (Groups::iterator it = groups.begin(); it != groups.end(); it++)
         (*it)->setupRx(0);

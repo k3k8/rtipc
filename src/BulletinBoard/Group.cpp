@@ -39,7 +39,8 @@ Group::Group (Main *main, double ts):
     copy_list = 0;
     signalSize = 0;
     sem = 0;
-    log_debug() << "New Group to main" << main << sampleTime << this;
+
+    log_debug() << "New group" << this << "to main" << main << sampleTime;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -50,6 +51,8 @@ Group::~Group ()
 
     for (SignalMap::iterator it = signals.begin(); it != signals.end(); it++)
         delete it->second;
+
+    log_debug() << "Finished group" << this;
 }
 
 //////////////////////////////////////////////////////////////////////////////

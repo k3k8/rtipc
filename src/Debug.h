@@ -36,6 +36,7 @@
 #define log_crit() \
     Debug::Log(__BASE_FILE__, __func__, __LINE__, Debug::Log::Critical)
 #define log_space(c) Debug::Log::Space(c)
+#define log_level(l) Debug::Log::setLevel(l)
 
 namespace Debug {
 
@@ -92,6 +93,7 @@ class NullLog {
 #define log_notice() NullLog()
 #define log_crit() NullLog()
 #define log_space(c...) NullLog()
+#define log_level(l)
 
 
 #endif  // RTIPC_DEBUG
