@@ -34,6 +34,7 @@
 #include "BulletinBoard/Main.h"
 #include <unistd.h>
 #include <stdexcept>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <cerrno>
@@ -125,13 +126,20 @@ Main::Main (const std::string &name, const std::string &cache_dir):
 {
     log_level(1);
 
-    confDir = cache_dir.empty() ?  QUOTE(SYSCONFDIR) "/rtipc" : cache_dir;
+    if (cache_dir.empty()) {
+        const char *dir = getenv("RTIPC_CACHE");
+        confDir = dir ? dir : QUOTE(LOCALSTATEDIR);
+    }
+    else {
+        confDir = cache_dir;
+    }
+
     if (*confDir.rbegin() != '/')
         confDir.append(1,'/');
 
     if (::access(confDir.c_str(), R_OK))
         throw std::runtime_error(
-                std::string("No access to directory ").append(confDir));
+                std::string("No access to cache directory ").append(confDir));
 
     log_notice() << "New RtIPC" << this << this->name
         << "Cache" << log_space(':') << confDir;

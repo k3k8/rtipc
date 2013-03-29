@@ -8,7 +8,10 @@
 #
 #  The following options can be specified on the command line of cmake to
 #  change the installation paths (Defaults are in <>)
-#       -DPREFIX=</opt/etherlab>
+#       -DCMAKE_INSTALL_PREFIX=</usr/local>
+#       -DCMAKE_INSTALL_INCLUDEDIR=<${CMAKE_INSTALL_PREFIX}/include>
+#       -DCMAKE_INSTALL_LIBDIR=<${CMAKE_INSTALL_PREFIX}/lib(64)>
+#       -DCMAKE_INSTALL_LOCALSTATEDIR=<${CMAKE_INSTALL_PREFIX}/var>
 #
 #  For debugging, use the
 #       -DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo|MinSizeRel
@@ -37,6 +40,15 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 PROJECT (rtipc)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
+#
+# Release Instructions
+#
+# - Update version numbers below
+# - Update SOVERSION below
+# - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
+# - Update NEWS file
+# - make dist
+#
 SET (MAJOR_VERSION 0)
 SET (MINOR_VERSION 99)
 SET (PATCH_LEVEL 0)
@@ -45,58 +57,9 @@ SET (VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_LEVEL})
 # library version
 SET (SOVERSION ${MAJOR_VERSION}.${MINOR_VERSION})
 
-# Project path options
-IF (NOT PREFIX)         # Project root
-    SET (PREFIX "/opt/etherlab")
-ENDIF ()
-
-SET (CMAKE_INSTALL_PREFIX "${PREFIX}")
-LIST (APPEND CMAKE_PREFIX_PATH "${PREFIX}")
-
-IF (SYSCONFDIR)         # configuration files
-    SET (ABS_SYSCONFDIR "${SYSCONFDIR}")
-    SET (PC_SYSCONFDIR "${SYSCONFDIR}")
-ELSE ()
-    SET (ABS_SYSCONFDIR ${PREFIX}/etc)
-    SET (PC_SYSCONFDIR "\${prefix}/etc")
-ENDIF ()
-
-IF (INCLUDEDIR)         # include files
-    SET (ABS_INCLUDEDIR "${INCLUDEDIR}")
-    SET (PC_INCLUDEDIR "${INCLUDEDIR}")
-    LIST (APPEND CMAKE_INCLUDE_PATH "${INCLUDEDIR}")
-ELSE ()
-    SET (ABS_INCLUDEDIR ${PREFIX}/include)
-    SET (PC_INCLUDEDIR "\${prefix}/include")
-ENDIF ()
-
-IF (EXECDIR)            # executables
-    SET (ABS_EXECDIR "${EXECDIR}")
-    SET (PC_EXECDIR "${EXECDIR}")
-ELSE ()
-    SET (ABS_EXECDIR ${PREFIX}/bin)
-    SET (PC_EXECDIR "\${prefix}/bin")
-ENDIF ()
-
-IF (LIBDIR)             # libraries
-    SET (ABS_LIBDIR "${LIBDIR}")
-    SET (PC_LIBDIR "${LIBDIR}")
-ELSE ()
-    SET (ABS_LIBDIR ${PREFIX}/lib)
-    SET (PC_LIBDIR "\${prefix}/lib")
-ENDIF ()
-
-# Make sure that the project options are remembered
-SET (PREFIX "${PREFIX}" CACHE PATH
-    "Root directory for the project" FORCE)
-SET (SYSCONFDIR "${SYSCONFDIR}" CACHE PATH
-    "Directory for configuration files" FORCE)
-SET (INCLUDEDIR "${INCLUDEDIR}" CACHE PATH
-    "Directory for header files" FORCE)
-SET (EXECDIR "${EXECDIR}" CACHE PATH
-    "Directory for executables" FORCE)
-SET (LIBDIR "${LIBDIR}" CACHE PATH
-    "Directory for libraries" FORCE)
+# GNU Paths:
+#       CMAKE_INSTALL_*
+INCLUDE (GNUInstallDirs)
 
 OPTION ( DEBUG "Debugging output" OFF )
 SET  (RTIPC_DEBUG ${DEBUG})
@@ -107,6 +70,7 @@ endif (DEBUG)
 
 # Search for mercurial, used to add ID information to the library
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+FIND_PACKAGE (Yaml REQUIRED)
 # FIND_PACKAGE (Mercurial)
 # IF (MERCURIAL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.hg")
 # MERCURIAL_HG_INFO (${PROJECT_SOURCE_DIR} Package)
@@ -143,8 +107,12 @@ INCLUDE (CPack)
 ADD_CUSTOM_TARGET (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 
 INSTALL (DIRECTORY include/
-    DESTINATION "${ABS_INCLUDEDIR}"
+    DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}"
     FILES_MATCHING PATTERN "*.h")
+
+# Directory where RTIPC stores its variable cache files
+SET (VARDIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/lib/${PROJECT_NAME}")
+INSTALL (CODE "FILE(MAKE_DIRECTORY \"\$ENV{DESTDIR}${VARDIR}\")")
 
 CONFIGURE_FILE (
     "${PROJECT_SOURCE_DIR}/config.h.in"
