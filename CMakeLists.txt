@@ -33,7 +33,7 @@
 #############################################################################
 
 
-CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED (VERSION 2.8.5)
 PROJECT (rtipc)
 SET (CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
@@ -52,9 +52,6 @@ ENDIF ()
 
 # GNU Paths:
 #       CMAKE_INSTALL_*
-#IF (${CMAKE_VERSION} VERSION_LESS "2.8.5")
-#  LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/compat/")
-#ENDIF ()
 INCLUDE (GNUInstallDirs)
 
 OPTION ( DEBUG "Debugging output" OFF )
