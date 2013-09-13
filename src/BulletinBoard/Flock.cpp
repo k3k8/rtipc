@@ -28,8 +28,11 @@
 #include <stdexcept>
 
 #include <cerrno>
-#include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 using namespace BulletinBoard;
 
@@ -39,7 +42,7 @@ Flock::Flock (const std::string &file)
     struct flock f;
     int rv;
 
-    fd = open(file.c_str(), O_WRONLY);
+    fd = ::open(file.c_str(), O_WRONLY);
 
     if (fd < 0)
         throw std::runtime_error("Could not open lock file");
@@ -58,5 +61,5 @@ Flock::Flock (const std::string &file)
 /////////////////////////////////////////////////////////////////////////////
 Flock::~Flock ()
 {
-    close(fd);
+    ::close(fd);
 }

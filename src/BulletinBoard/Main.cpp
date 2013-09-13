@@ -69,13 +69,13 @@ void Main::load (const std::string& file)
 
         YAML::Map group(*g);
 
-        Group *g = addGroup(group["SampleTime"]);
+        Group *g1 = addGroup(group["SampleTime"]);
         YAML::Sequence signals = group["Signals"];
 
         for (YAML::Sequence::Iterator it(signals); it; ++it) {
 
             YAML::Map sigSpec = *it;
-            newSignal(g,
+            newSignal(g1,
                     sigSpec["Name"].toString(),
                     DataType(sigSpec["DataType"].toString()),
                     static_cast<unsigned int>(sigSpec["Length"]));
