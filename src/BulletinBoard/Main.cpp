@@ -65,9 +65,9 @@ void Main::load (const std::string& file)
     YAML::Doc conf(file);
     YAML::Sequence groups(conf);
 
-    for (YAML::Sequence::Iterator g(groups); g; ++g) {
+    for (YAML::Sequence::Iterator i(groups); i; ++i) {
 
-        YAML::Map group(*g);
+        YAML::Map group(*i);
 
         Group *g = addGroup(group["SampleTime"]);
         YAML::Sequence signals = group["Signals"];
