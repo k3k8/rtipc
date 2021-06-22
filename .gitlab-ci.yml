@@ -1,0 +1,13 @@
+image: registry.gitlab.com/etherlab.org/build-container-factory/leap-15.2:base
+
+build:
+    stage: build
+
+    script:
+        - mkdir build
+        - cd build
+        - cmake ..
+        - make
+
+include:
+    - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
