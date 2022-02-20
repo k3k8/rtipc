@@ -27,6 +27,10 @@
 #include <stddef.h>
 #include <time.h>
 
+// macros for symbol export/import
+#define RTIPC_PUBLIC __attribute__ ((visibility ("default")))
+#define RTIPC_LOCAL  __attribute__ ((visibility ("hidden")))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +61,7 @@ struct rtipc_group;
  *      NULL on error
  *      pointer to struct rtipc on success
  */
-struct rtipc* rtipc_create(
+RTIPC_PUBLIC struct rtipc* rtipc_create(
         const char *name,       /**< Name of the process. The configuration
                                  * file will be called <name>.conf */
         const char *cache_dir   /**< Path to a writeable directory for
@@ -73,7 +77,7 @@ struct rtipc* rtipc_create(
  *      NULL on error
  *      pointer to struct rtipc_group on success
  */
-struct rtipc_group* rtipc_create_group(
+RTIPC_PUBLIC struct rtipc_group* rtipc_create_group(
         struct rtipc* rtipc,    /**< Pointer to rtipc structure */
         double sample_time      /**< Group sample time. The sample time is
                                  * used to determine whether a signal
@@ -91,7 +95,7 @@ struct rtipc_group* rtipc_create_group(
  * returns:
  *      txpdo structure. NULL on error, e.g. when the name is repeated.
  */
-struct txpdo* rtipc_txpdo(
+RTIPC_PUBLIC struct txpdo* rtipc_txpdo(
         struct rtipc_group *group,/**< Pointer to rtipc group */
         const char *name,         /**< Signal's global name. The name should
                                    * be unique over ALL applications */
@@ -111,7 +115,7 @@ struct txpdo* rtipc_txpdo(
  *
  * NOTE: This function may be only be called after @rtipc_prepare().
  */
-void rtipc_set_txpdo_addr(
+RTIPC_PUBLIC void rtipc_set_txpdo_addr(
         const struct txpdo*,    /**< Pointer to a TxPdo */
         const void *addr        /**< Signal source address. NULL will use
                                  * original @addr passed when calling
@@ -126,7 +130,7 @@ void rtipc_set_txpdo_addr(
  * returns:
  *      rxpdo structure.
  */
-struct rxpdo* rtipc_rxpdo(
+RTIPC_PUBLIC struct rxpdo* rtipc_rxpdo(
         struct rtipc_group *group,/**< Pointer to rtipc group */
         const char *name,         /**< Signal's name */
         enum rtipc_datatype_t datatype, /**< Signal data type */
@@ -149,7 +153,7 @@ struct rxpdo* rtipc_rxpdo(
  *
  * NOTE: This function may be only be called after @rtipc_prepare().
  */
-void rtipc_set_rxpdo_addr(
+RTIPC_PUBLIC void rtipc_set_rxpdo_addr(
         const struct rxpdo*,    /**< rxpdo structure */
         const void *addr        /**< Signal address */
         );
@@ -164,7 +168,7 @@ void rtipc_set_rxpdo_addr(
  *      0 success
  *      error code on error
  */
-int rtipc_prepare(
+RTIPC_PUBLIC int rtipc_prepare(
         struct rtipc* rtipc     /**< Pointer to rtipc structure */
         );
 
@@ -172,7 +176,7 @@ int rtipc_prepare(
  *
  * Use only after calling @rtipc_prepare()
  */
-void rtipc_tx(
+RTIPC_PUBLIC void rtipc_tx(
         struct rtipc_group *group /**< Pointer to group structure */
         );
 
@@ -180,13 +184,13 @@ void rtipc_tx(
  *
  * Use only after calling @rtipc_prepare()
  */
-void rtipc_rx(
+RTIPC_PUBLIC void rtipc_rx(
         struct rtipc_group *group /**< Pointer to group structure */
         );
 
 /** Cleanup library
  */
-void rtipc_exit(
+RTIPC_PUBLIC void rtipc_exit(
         struct rtipc* rtipc     /**< Pointer to rtipc structure */
         );
 
