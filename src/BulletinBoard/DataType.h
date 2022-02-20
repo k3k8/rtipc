@@ -26,7 +26,7 @@
 
 #include <string>
 #include "DataType.h"
-#include "include/rtipc.h"
+#include <rtipc.h>
 
 namespace BulletinBoard {
 
