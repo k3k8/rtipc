@@ -50,6 +50,9 @@ class Node {
                 return val;
             };
 
+        // migitate conversion operator when casting derived class to Node
+        const Node& toNode() const { return *this; }
+
     protected:
         int createScalar(const std::ostringstream& value, char quote = 0);
         template<class T>

@@ -63,7 +63,7 @@ void Main::load (const std::string& file)
     lockFile = file;
 
     YAML::Doc conf(file);
-    YAML::Sequence groups(conf);
+    YAML::Sequence groups(conf.toNode());
 
     for (YAML::Sequence::Iterator i(groups); i; ++i) {
 
@@ -392,7 +392,7 @@ bool Main::save (const std::string &file)
     lockFile = file;
 
     YAML::Doc conf(YAML::Node::Sequence);
-    YAML::Sequence groups(conf);
+    YAML::Sequence groups(conf.toNode());
 
     for (Groups::const_iterator it = this->groups.begin();
             it != this->groups.end(); it++) {
