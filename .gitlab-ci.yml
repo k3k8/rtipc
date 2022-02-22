@@ -6,8 +6,25 @@ build:
     script:
         - mkdir build
         - cd build
-        - cmake ..
+        - cmake -DCMAKE_INSTALL_PREFIX=/tmp/rtipc_test ..
         - make
+
+    artifacts:
+        expire_in: 2 hrs
+        paths:
+            - build
+
+test:
+    stage: test
+
+    script:
+        - pushd build && make install && popd
+        - cd test && mv CMakeLists.txt.external CMakeLists.txt && mkdir build_installed_lib build_reuse_builddir
+        - pushd build_installed_lib; cmake -DCMAKE_PREFIX_PATH=/tmp/rtipc_test .. && make; popd
+        - pushd build_reuse_builddir; cmake -DCMAKE_PREFIX_PATH=$(pwd)/../../build/src .. && make; popd
+
+    dependencies:
+        - build
 
 include:
     - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
