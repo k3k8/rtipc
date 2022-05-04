@@ -24,7 +24,7 @@
 #include "config.h"
 
 #include "Debug.h"
-#include "include/rtipc.h"
+#include <rtipc.h>
 
 #include "Main.h"
 #include "Group.h"
