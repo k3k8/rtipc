@@ -23,6 +23,8 @@
 
 #include "config.h"
 
+#include <git_revision_hash.h>
+
 #include "Debug.h"
 #include <rtipc.h>
 
@@ -42,6 +44,11 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+
+extern "C"
+{
+    const char *const RTIPC_FULL_VERSION_STRING = GIT_REV;
+}
 
 namespace BB = BulletinBoard;
 
