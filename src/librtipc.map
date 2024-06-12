@@ -1,0 +1,38 @@
+#############################################################################
+#
+#  Copyright 2024 Bjarne von Horn <vh@igh.de>
+#
+#  This file is part of the rtipc library.
+#
+#  The rtipc library is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or (at your
+#  option) any later version.
+#
+#  The rtipc library is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+#  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+#  License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with the rtipc library. If not, see <http://www.gnu.org/licenses/>.
+#
+#############################################################################
+
+LIBRTIPC_1.0 {
+    global:
+        RTIPC_FULL_VERSION_STRING;
+        rtipc_create;
+        rtipc_create_group;
+        rtipc_exit;
+        rtipc_prepare;
+        rtipc_rx;
+        rtipc_rxpdo;
+        rtipc_set_rxpdo_addr;
+        rtipc_set_txpdo_addr;
+        rtipc_tx;
+        rtipc_txpdo;
+    local:
+        # hide all C++ related stuff.
+        _Z*;
+};

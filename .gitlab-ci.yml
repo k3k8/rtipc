@@ -1,4 +1,4 @@
-image: registry.gitlab.com/etherlab.org/build-container-factory/leap-15.2:base
+image: registry.gitlab.com/etherlab.org/build-container-factory/leap-15.4:base
 
 build:
     stage: build
@@ -8,6 +8,7 @@ build:
         - cd build
         - cmake -DCMAKE_INSTALL_PREFIX=/tmp/rtipc_test ..
         - make
+        - make symbol_version_check
 
     artifacts:
         expire_in: 2 hrs
