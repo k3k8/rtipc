@@ -1,7 +1,5 @@
 /*****************************************************************************
  *
- *  $Id$
- *
  *  Copyright 2010 Richard Hacker (lerichi at gmx dot net)
  *
  *  This file is part of the rtipc library.

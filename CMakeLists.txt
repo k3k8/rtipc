@@ -1,7 +1,5 @@
 #############################################################################
 #
-#  $Id$
-#
 #  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
 #
 #  This is the main cmake file for the rtipc package
