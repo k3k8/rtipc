@@ -37,14 +37,15 @@
 
 
 CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
-PROJECT (rtipc VERSION 0.99.1)
+PROJECT (rtipc VERSION 1.0.0)
 
 #
 # Release Instructions
 #
-# - Update version numbers above
+# - Make sure new symbols are listed in src/librtipc.map
+# - Update version numbers above (semantic versioning)
 # - Update SOVERSION below on abi breakage
-# - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
+# - Update ChangeLog
 # - Update NEWS file
 # - make dist
 #
