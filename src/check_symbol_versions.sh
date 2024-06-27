@@ -1,6 +1,7 @@
-##############################################################################
+#!/bin/sh
+#############################################################################
 #
-#  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
+#  Copyright 2024 Bjarne von Horn <vh@igh.de>
 #
 #  This file is part of the rtipc library.
 #
@@ -17,11 +18,9 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with the rtipc library. If not, see <http://www.gnu.org/licenses/>.
 #
-##############################################################################
+#############################################################################
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set -e
 
-ADD_EXECUTABLE(test1 test1.cpp)
-TARGET_LINK_LIBRARIES(test1 ${PROJECT_NAME} rt)
-
-ADD_TEST(test1 test1)
+readelf --dyn-syms --wide "$1" | \
+    awk '$4 == "FUNC" && $5 != "WEAK" && $7 != "UND" && $8 !~ /@LIBRTIPC/ { print "Unversioned symbol: " $8; err = 1; } END { exit err; }'

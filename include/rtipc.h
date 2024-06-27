@@ -1,7 +1,5 @@
 /*****************************************************************************
  *
- *  $Id$
- *
  *  Copyright 2012  Richard Hacker (lerichi at gmx dot net)
  *
  *  This file is part of the rtipc library.
@@ -34,6 +32,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Library version with four fields followed by the commit hash.
+ * A trailing plus sign shows that uncommitted changes existed during
+ * the build. The hash is prefixed with a "g" to indicate that git is used
+ * as version control system.
+ *
+ * Example: "5.1.0.8.gea62937+".
+ */
+RTIPC_PUBLIC extern const char *const RTIPC_FULL_VERSION_STRING;
 
 /** Data type definitions.
  *

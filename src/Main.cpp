@@ -1,7 +1,5 @@
 /*****************************************************************************
  *
- *  $Id$
- *
  *  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
  *
  *  This file is part of the rtipc library.
@@ -23,6 +21,8 @@
 
 #include "config.h"
 
+#include <git_revision_hash.h>
+
 #include "Debug.h"
 #include <rtipc.h>
 
@@ -42,6 +42,11 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+
+extern "C"
+{
+    const char *const RTIPC_FULL_VERSION_STRING = GIT_REV;
+}
 
 namespace BB = BulletinBoard;
 

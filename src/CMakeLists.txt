@@ -1,7 +1,5 @@
 #############################################################################
 #
-#  $Id$
-#
 #  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
 #
 #  This file is part of the rtipc library.
@@ -47,6 +45,18 @@ SET_TARGET_PROPERTIES ( ${PROJECT_NAME} PROPERTIES
     VISIBILITY_INLINES_HIDDEN 1
 
 )
+SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES LINK_FLAGS " -Wl,-version-script=${CMAKE_CURRENT_SOURCE_DIR}/librtipc.map")
+
+ADD_CUSTOM_TARGET(symbol_version_check COMMAND
+    /bin/sh "${CMAKE_CURRENT_SOURCE_DIR}/check_symbol_versions.sh" $<TARGET_FILE:${PROJECT_NAME}>
+)
+
+ADD_DEPENDENCIES(symbol_version_check ${PROJECT_NAME})
+SET_SOURCE_FILES_PROPERTIES(Main.cpp PROPERTIES
+    OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/librtipc.map"
+)
+
+
 
 TARGET_LINK_LIBRARIES (${PROJECT_NAME} PRIVATE
     ${Yaml_LIBRARIES}
@@ -60,7 +70,30 @@ TARGET_INCLUDE_DIRECTORIES (${PROJECT_NAME} PRIVATE
     ${Yaml_INCLUDE_DIR}
     ${Mhash_INCLUDE_DIR}
     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
 )
+
+# prepare version information
+
+IF(VERSION_HASH)
+    # Hash was given as option, so write it directly
+    # useful for OBS packaging
+    FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/git_revision_hash.h"
+        "#define GIT_REV \"${VERSION_HASH}\"
+")
+ELSE()
+    # recompute hash on every `make` invocation
+    # Note: CMake variable definitions (-D) must be before the -P option!
+    ADD_CUSTOM_TARGET(GitRevision
+        BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/git_revision_hash.h"
+        COMMAND ${CMAKE_COMMAND}
+            -DSOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/.."
+            -DHASH_MACRO_NAME="GIT_REV"
+            -DTARGET_FILE="${CMAKE_CURRENT_BINARY_DIR}/git_revision_hash.h"
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cmake
+    )
+    ADD_DEPENDENCIES(${PROJECT_NAME} GitRevision)
+ENDIF()
 
 
 # pkgconfig files

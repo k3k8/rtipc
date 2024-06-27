@@ -1,7 +1,5 @@
 #############################################################################
 #
-#  $Id$
-#
 #  Copyright 2012 Richard Hacker (lerichi at gmx dot net)
 #
 #  This is the main cmake file for the rtipc package
@@ -37,20 +35,21 @@
 
 
 CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
-PROJECT (rtipc VERSION 0.99.1)
+PROJECT (rtipc VERSION 1.0.0)
 
 #
 # Release Instructions
 #
-# - Update version numbers above
+# - Make sure new symbols are listed in src/librtipc.map
+# - Update version numbers above (semantic versioning)
 # - Update SOVERSION below on abi breakage
-# - Update ChangeLog (hg log --branch <branch> --style=changelog > ChangeLog)
+# - Update ChangeLog
 # - Update NEWS file
 # - make dist
 #
 
 # library version
-SET (SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+SET (SOVERSION 1)
 
 # GNU Paths:
 #       CMAKE_INSTALL_*
@@ -67,10 +66,6 @@ endif (DEBUG)
 LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 FIND_PACKAGE (Yaml REQUIRED)
 FIND_PACKAGE (Mhash REQUIRED)
-# FIND_PACKAGE (Mercurial)
-# IF (MERCURIAL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.hg")
-# MERCURIAL_HG_INFO (${PROJECT_SOURCE_DIR} Package)
-# ENDIF ()
 
 ADD_SUBDIRECTORY (src)
 ADD_SUBDIRECTORY (test)
