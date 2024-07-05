@@ -27,7 +27,6 @@ includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
 Name: @PROJECT_NAME@
 Description: Process data communications library
 Version: @VERSION@
-Requires: libccgnu2
 URL: http://www.etherlab.org
 Libs:  -L${libdir} -l@PROJECT_NAME@
 Cflags: -I${includedir}
