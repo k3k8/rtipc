@@ -34,7 +34,7 @@
 #############################################################################
 
 
-CMAKE_MINIMUM_REQUIRED (VERSION 3.2)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.5)
 PROJECT (rtipc VERSION 1.0.1)
 
 #
