@@ -63,7 +63,7 @@ if (DEBUG)
 endif (DEBUG)
 
 # Search for mercurial, used to add ID information to the library
-LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+LIST (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 FIND_PACKAGE (Yaml REQUIRED)
 FIND_PACKAGE (Mhash REQUIRED)
 
